@@ -111,10 +111,13 @@ fun CharacterDetailScreen(
                 .padding(innerPadding),
             contentAlignment = Alignment.Center,
         ) {
+            // Local val enables smart-cast inside the when branch — the delegated
+            // `state` property from collectAsStateWithLifecycle() cannot be smart-cast directly.
+            val character = state.character
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.size(48.dp))
                 state.error != null -> ErrorMessage(message = state.error)
-                state.character != null -> CharacterDetailContent(character = state.character!!)
+                character != null -> CharacterDetailContent(character = character)
             }
         }
     }

@@ -139,3 +139,7 @@ Thumbs.db
 
 # Keystore properties files
 keystore.release.properties
+
+# Claude Code worktrees and scratch dirs
+.claude/worktrees/
+.claire/
