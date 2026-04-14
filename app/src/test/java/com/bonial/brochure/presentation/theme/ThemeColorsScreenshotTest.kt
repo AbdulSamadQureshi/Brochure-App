@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
+import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
@@ -58,7 +59,14 @@ class ThemeColorsScreenshotTest {
                 DetailChipRow("Unknown", StatusUnknownBg, StatusUnknown, StatusUnknownText)
             }
         }
-        composeRule.onRoot().captureRoboImage()
+        // 1% pixel tolerance absorbs font-antialiasing differences between
+        // the macOS dev machine and the Ubuntu CI runner. Color drift on any
+        // badge still produces a far larger diff and fails the test.
+        composeRule.onRoot().captureRoboImage(
+            roborazziOptions = RoborazziOptions(
+                compareOptions = RoborazziOptions.CompareOptions(changeThreshold = 0.01f),
+            ),
+        )
     }
 }
 
