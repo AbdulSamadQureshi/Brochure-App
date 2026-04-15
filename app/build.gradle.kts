@@ -74,7 +74,7 @@ configure<ApplicationExtension> {
 
         val qa by creating {
             initWith(getByName("release")) // Inherit release ProGuard config
-            isDebuggable = true
+            isDebuggable = false
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
             matchingFallbacks += listOf("release")
