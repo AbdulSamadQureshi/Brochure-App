@@ -3,13 +3,12 @@ package com.bonial.brochure.presentation.home
 import app.cash.turbine.test
 import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.testing.MainDispatcherRule
-import com.bonial.domain.model.Character
+import com.bonial.domain.model.CharacterWithFavourite
+import com.bonial.domain.model.CharactersWithFavouritePage
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request
-import com.bonial.domain.repository.CharactersPage
 import com.bonial.domain.useCase.characters.CharactersParams
-import com.bonial.domain.useCase.characters.CharactersUseCase
-import com.bonial.domain.useCase.favourites.GetFavouriteCoverUrlsUseCase
+import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,26 +28,25 @@ class CharactersViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val charactersUseCase: CharactersUseCase = mock()
-    private val getFavourites: GetFavouriteCoverUrlsUseCase = mock()
+    private val getEnrichedCharactersUseCase: GetEnrichedCharactersUseCase = mock()
     private val toggleFavourite: ToggleFavouriteUseCase = mock()
 
-    private fun viewModel(): CharactersViewModel = CharactersViewModel(charactersUseCase, getFavourites, toggleFavourite)
+    private fun viewModel(): CharactersViewModel = CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
 
     @Test
     fun `initial load populates state and marks matching items as favourite`() =
         runTest {
             val page =
-                CharactersPage(
+                CharactersWithFavouritePage(
                     characters =
                         listOf(
-                            Character(1, "Rick", "Alive", "Human", "https://img/rick.png"),
-                            Character(2, "Morty", "Alive", "Human", "https://img/morty.png"),
+                            CharacterWithFavourite(1, "Rick", "Alive", "Human", "https://img/rick.png", true),
+                            CharacterWithFavourite(2, "Morty", "Alive", "Human", "https://img/morty.png", false),
                         ),
                     totalPages = 5,
                 )
-            whenever(getFavourites()).thenReturn(MutableStateFlow(setOf("https://img/rick.png")))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(page)))
 
             viewModel().uiState.test {
                 // drain until we see the populated success state
@@ -67,8 +65,10 @@ class CharactersViewModelTest {
     @Test
     fun `api error sets error state and emits ShowError effect`() =
         runTest {
-            whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(
+                flowOf(Request.Error(ApiError("500", "Server exploded"))),
+            )
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(
                 flowOf(Request.Error(ApiError("500", "Server exploded"))),
             )
 
@@ -86,33 +86,33 @@ class CharactersViewModelTest {
     @Test
     fun `LoadNextPage is ignored when already on the last page`() =
         runTest {
-            val page = CharactersPage(characters = emptyList(), totalPages = 1)
-            whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            val page = CharactersWithFavouritePage(characters = emptyList(), totalPages = 1)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(page)))
 
             val vm = viewModel()
             vm.sendIntent(CharactersIntent.LoadNextPage)
 
             // Use case should only be hit at least once for the initial load.
-            verify(charactersUseCase, atLeastOnce()).invoke(CharactersParams(1))
+            verify(getEnrichedCharactersUseCase, atLeastOnce()).invoke(CharactersParams(1, ""))
         }
 
     @Test
     fun `Search intent updates searchQuery and reflects the query results`() =
         runTest {
             val page =
-                CharactersPage(
+                CharactersWithFavouritePage(
                     characters =
                         listOf(
-                            Character(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png"),
-                            Character(2, "Morty Smith", "Alive", "Human", "https://img/morty.png"),
-                            Character(3, "Rick Prime", "Alive", "Human", "https://img/rick-prime.png"),
+                            CharacterWithFavourite(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png", false),
+                            CharacterWithFavourite(2, "Morty Smith", "Alive", "Human", "https://img/morty.png", false),
+                            CharacterWithFavourite(3, "Rick Prime", "Alive", "Human", "https://img/rick-prime.png", false),
                         ),
                     totalPages = 1,
                 )
-            whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
-            whenever(charactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
 
             val vm = viewModel()
 
@@ -141,17 +141,17 @@ class CharactersViewModelTest {
     fun `Search with empty query shows all characters`() =
         runTest {
             val page =
-                CharactersPage(
+                CharactersWithFavouritePage(
                     characters =
                         listOf(
-                            Character(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png"),
-                            Character(2, "Morty Smith", "Alive", "Human", "https://img/morty.png"),
+                            CharacterWithFavourite(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png", false),
+                            CharacterWithFavourite(2, "Morty Smith", "Alive", "Human", "https://img/morty.png", false),
                         ),
                     totalPages = 1,
                 )
-            whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
-            whenever(charactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(page)))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
 
             val vm = viewModel()
 
@@ -182,9 +182,11 @@ class CharactersViewModelTest {
     @Test
     fun `ToggleFavourite ignores characters without an imageUrl`() =
         runTest {
-            whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-            whenever(charactersUseCase(CharactersParams(1))).thenReturn(
-                flowOf(Request.Success(CharactersPage(emptyList(), 1))),
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(
+                flowOf(Request.Success(CharactersWithFavouritePage(emptyList(), 1))),
+            )
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(
+                flowOf(Request.Success(CharactersWithFavouritePage(emptyList(), 1))),
             )
 
             val vm = viewModel()

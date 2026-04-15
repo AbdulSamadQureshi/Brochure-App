@@ -4,11 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.presentation.utils.toErrorMessage
 import com.bonial.core.base.MviViewModel
+import com.bonial.domain.model.CharactersWithFavouritePage
 import com.bonial.domain.model.network.response.Request
-import com.bonial.domain.repository.CharactersPage
 import com.bonial.domain.useCase.characters.CharactersParams
-import com.bonial.domain.useCase.characters.CharactersUseCase
-import com.bonial.domain.useCase.favourites.GetFavouriteCoverUrlsUseCase
+import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -60,8 +59,7 @@ sealed class CharactersEffect {
 class CharactersViewModel
     @Inject
     constructor(
-        private val charactersUseCase: CharactersUseCase,
-        private val getFavouriteCoverUrlsUseCase: GetFavouriteCoverUrlsUseCase,
+        private val getEnrichedCharactersUseCase: GetEnrichedCharactersUseCase,
         private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
     ) : MviViewModel<CharactersState, CharactersIntent, CharactersEffect>() {
         private val searchQueryFlow = MutableStateFlow("")
@@ -108,26 +106,18 @@ class CharactersViewModel
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
         private fun observeSearchAndFavourites() {
             viewModelScope.launch {
-                combine(
-                    searchQueryFlow
-                        .debounce { query -> if (query.isEmpty()) 0L else SEARCH_DEBOUNCE_MS }
-                        .distinctUntilChanged(),
-                    getFavouriteCoverUrlsUseCase(),
-                ) { query, favouriteUrls ->
-                    query to favouriteUrls
-                }.flatMapLatest { (query, favouriteUrls) ->
-                    val sanitizedQuery = query.ifBlank { null }
-
-                    charactersUseCase(CharactersParams(page = 1, name = sanitizedQuery))
-                        .map { response -> response to favouriteUrls }
-                }.collect { (response, savedFavourites) ->
-                    handleResponse(
-                        response = response,
-                        savedFavourites = savedFavourites,
-                        isNextPage = false,
-                        page = 1,
-                    )
-                }
+                searchQueryFlow
+                    .debounce { query -> if (query.isEmpty()) 0L else SEARCH_DEBOUNCE_MS }
+                    .distinctUntilChanged()
+                    .flatMapLatest { query ->
+                        getEnrichedCharactersUseCase(CharactersParams(page = 1, name = query))
+                    }.collect { response ->
+                        handleResponse(
+                            response = response,
+                            isNextPage = false,
+                            page = 1,
+                        )
+                    }
             }
         }
 
@@ -135,21 +125,17 @@ class CharactersViewModel
             page: Int,
             query: String?,
         ) {
-            val sanitizedQuery = query?.ifBlank { null }
             viewModelScope.launch {
                 setState { copy(isLoadingNextPage = true) }
 
-                val savedFavourites = getFavouriteCoverUrlsUseCase().first()
-
-                charactersUseCase(CharactersParams(page, sanitizedQuery)).collectLatest { response ->
-                    handleResponse(response, savedFavourites, isNextPage = true, page = page)
+                getEnrichedCharactersUseCase(CharactersParams(page, query)).collectLatest { response ->
+                    handleResponse(response, isNextPage = true, page = page)
                 }
             }
         }
 
         private fun handleResponse(
-            response: Request<CharactersPage>,
-            savedFavourites: Set<String>,
+            response: Request<CharactersWithFavouritePage>,
             isNextPage: Boolean,
             page: Int,
         ) {
@@ -171,9 +157,7 @@ class CharactersViewModel
                                 status = character.status,
                                 species = character.species,
                                 imageUrl = character.imageUrl,
-                                isFavourite =
-                                    character.imageUrl != null &&
-                                        character.imageUrl in savedFavourites,
+                                isFavourite = character.isFavourite,
                             )
                         }
                     setState {

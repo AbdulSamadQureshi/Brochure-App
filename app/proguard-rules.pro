@@ -48,6 +48,25 @@
 }
 # Keep model DTOs from being obfuscated (needed for Gson deserialization)
 -keep class com.bonial.domain.model.** { *; }
+-keep class com.bonial.brochure.presentation.model.** { *; }
+
+# ---- Use Cases ----
+# Keep Use Cases to ensure Hilt can always inject them and they aren't stripped/renamed
+-keep class com.bonial.domain.useCase.** { *; }
+
+# ---- Kotlin Serialization ----
+# Needed if you use @Serializable with Navigation 3 or DataStore
+-keepattributes *Annotation*, InnerClasses
+-keepclassmembers class * {
+    @kotlinx.serialization.SerialName <fields>;
+}
+-keepnames class kotlinx.serialization.internal.GeneratedSerializer { *; }
+-keepclassmembers class * {
+    *** Companion;
+}
+-keepclasseswithmembers class * {
+    *** serializer(...);
+}
 
 # ---- Hilt / Dagger ----
 -keep class dagger.** { *; }

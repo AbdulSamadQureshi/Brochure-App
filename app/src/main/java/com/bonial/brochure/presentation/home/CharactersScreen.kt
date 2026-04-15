@@ -50,6 +50,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,9 +92,13 @@ fun CharactersScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
 
+    var lastSearchedQuery by rememberSaveable { mutableStateOf(state.searchQuery) }
     // Reset scroll position when search query changes (including clearing search)
     LaunchedEffect(state.searchQuery) {
-        lazyGridState.scrollToItem(0)
+        if (state.searchQuery != lastSearchedQuery) {
+            lazyGridState.scrollToItem(0)
+            lastSearchedQuery = state.searchQuery
+        }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }

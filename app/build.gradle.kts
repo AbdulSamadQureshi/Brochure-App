@@ -52,7 +52,7 @@ configure<ApplicationExtension> {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
             isMinifyEnabled = true
@@ -64,32 +64,35 @@ configure<ApplicationExtension> {
         }
 
         getByName("debug") {
-            signingConfig = signingConfigs.getByName("debug")
-            isDebuggable = true
+            // Effectively making it invisible or internal by not defining extras, 
+            // but Gradle requires 'debug' to exist. We will rely on variantFilter 
+            // to hide it from the IDE if needed, or simply not use it.
         }
 
         val qa by creating {
-            initWith(getByName("debug"))
+            initWith(getByName("release")) // Inherit release config for ProGuard
             isDebuggable = true
-            isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
-            matchingFallbacks += listOf("debug", "release")
+            matchingFallbacks += listOf("release")
         }
 
         val staging by creating {
-            initWith(getByName("debug"))
+            initWith(getByName("release"))
             isDebuggable = true
-            isMinifyEnabled = false
+            isMinifyEnabled = false // Disabled for Staging as requested
             isShrinkResources = false
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            matchingFallbacks += listOf("debug", "release")
+            matchingFallbacks += listOf("release")
+        }
+    }
+
+    androidComponents {
+        beforeVariants { variantBuilder ->
+            if (variantBuilder.buildType == "debug") {
+                variantBuilder.enable = false
+            }
         }
     }
 

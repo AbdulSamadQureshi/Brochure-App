@@ -7,6 +7,7 @@ import com.bonial.domain.model.CharacterDetail
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharacterDetailUseCase
+import com.bonial.domain.useCase.characters.GetCharacterShareTextUseCase
 import com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import com.google.common.truth.Truth.assertThat
@@ -35,6 +36,7 @@ class CharacterDetailViewModelTest {
     private val characterDetailUseCase: CharacterDetailUseCase = mock()
     private val isFavouriteFlowUseCase: IsFavouriteFlowUseCase = mock()
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase = mock()
+    private val getCharacterShareTextUseCase: GetCharacterShareTextUseCase = mock()
 
     private fun viewModel(id: Int = CHARACTER_ID): CharacterDetailViewModel =
         CharacterDetailViewModel(
@@ -42,6 +44,7 @@ class CharacterDetailViewModelTest {
             characterDetailUseCase = characterDetailUseCase,
             isFavouriteFlowUseCase = isFavouriteFlowUseCase,
             toggleFavouriteUseCase = toggleFavouriteUseCase,
+            getCharacterShareTextUseCase = getCharacterShareTextUseCase,
         )
 
     // ------------------------------------------------------------------
@@ -202,6 +205,8 @@ class CharacterDetailViewModelTest {
     fun `ShareCharacter emits Share effect with all character details`() =
         runTest {
             givenSuccessResponse(CHARACTER_ID)
+            val expectedText = "Rick Sanchez · Human · Alive\n$IMAGE_URL"
+            whenever(getCharacterShareTextUseCase(characterDetail())).thenReturn(expectedText)
 
             val vm = viewModel()
             // Wait for character to load.
@@ -216,10 +221,7 @@ class CharacterDetailViewModelTest {
                 val effect = awaitItem()
                 assertThat(effect).isInstanceOf(CharacterDetailEffect.Share::class.java)
                 val shareText = (effect as CharacterDetailEffect.Share).text
-                assertThat(shareText).contains("Rick Sanchez")
-                assertThat(shareText).contains("Human")
-                assertThat(shareText).contains("Alive")
-                assertThat(shareText).contains(IMAGE_URL)
+                assertThat(shareText).isEqualTo(expectedText)
                 cancelAndIgnoreRemainingEvents()
             }
         }

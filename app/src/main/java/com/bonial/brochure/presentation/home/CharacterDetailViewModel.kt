@@ -7,6 +7,7 @@ import com.bonial.brochure.presentation.utils.toErrorMessage
 import com.bonial.core.base.MviViewModel
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharacterDetailUseCase
+import com.bonial.domain.useCase.characters.GetCharacterShareTextUseCase
 import com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.assisted.Assisted
@@ -47,6 +48,7 @@ class CharacterDetailViewModel
         private val characterDetailUseCase: CharacterDetailUseCase,
         private val isFavouriteFlowUseCase: IsFavouriteFlowUseCase,
         private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
+        private val getCharacterShareTextUseCase: GetCharacterShareTextUseCase,
     ) : MviViewModel<CharacterDetailState, CharacterDetailIntent, CharacterDetailEffect>() {
         /**
          * Tracks the active load coroutine. If the screen is somehow recreated or the
@@ -125,20 +127,21 @@ class CharacterDetailViewModel
          */
         private fun shareCharacter() {
             val character = uiState.value.character ?: return
-            val text =
-                buildString {
-                    append(character.name ?: "")
-                    character.species?.let { species ->
-                        append(" · $species")
-                    }
-                    character.status?.let { status ->
-                        append(" · $status")
-                    }
-                    character.imageUrl?.let { imageUrl ->
-                        append("\n$imageUrl")
-                    }
-                }
-            setEffect { CharacterDetailEffect.Share(text) }
+            
+            viewModelScope.launch {
+                val detail = com.bonial.domain.model.CharacterDetail(
+                    id = character.id,
+                    name = character.name,
+                    status = character.status,
+                    species = character.species,
+                    gender = character.gender,
+                    origin = character.origin,
+                    location = character.location,
+                    imageUrl = character.imageUrl
+                )
+                val shareText = getCharacterShareTextUseCase(detail)
+                setEffect { CharacterDetailEffect.Share(shareText) }
+            }
         }
 
         private fun toggleFavourite() {
