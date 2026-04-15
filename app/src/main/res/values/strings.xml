@@ -6,4 +6,12 @@
     <string name="content_desc_favourite">Add to favourites</string>
     <string name="content_desc_unfavourite">Remove from favourites</string>
     <string name="label_back">Back</string>
+    <string name="label_retry">Retry</string>
+    <string name="label_share">Share</string>
+    <string name="hint_search">Search characters…</string>
+    <string name="empty_state_title">No characters yet</string>
+    <string name="empty_state_subtitle">Pull down to refresh</string>
+    <string name="empty_search_title">No results found</string>
+    <string name="empty_search_subtitle">Try a different search term</string>
+    <string name="content_desc_clear_search">Clear search</string>
 </resources>

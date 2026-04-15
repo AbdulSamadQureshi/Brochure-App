@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -76,6 +78,7 @@ fun CharacterDetailScreen(
     onBack: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -96,6 +99,28 @@ fun CharacterDetailScreen(
                     }
                 },
                 actions = {
+                    state.character?.let { character ->
+                        IconButton(
+                            onClick = {
+                                val shareText = buildString {
+                                    append(character.name ?: "")
+                                    character.species?.let { append(" · $it") }
+                                    character.status?.let { append(" · $it") }
+                                    character.imageUrl?.let { append("\n$it") }
+                                }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(intent, null))
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.label_share),
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = { viewModel.sendIntent(CharacterDetailIntent.ToggleFavourite) },
                     ) {
@@ -163,7 +188,7 @@ private fun CharacterDetailContent(character: CharacterDetailUi) {
                     .build(),
                 contentDescription = character.name,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 onState = { state ->
                     if (state is AsyncImagePainter.State.Success) imageLoaded = true
                 },

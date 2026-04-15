@@ -22,12 +22,21 @@ data class CharactersState(
     val error: String? = null,
     val currentPage: Int = 1,
     val totalPages: Int = 1,
-)
+    val searchQuery: String = "",
+) {
+    /** Derived list — filtered locally so no extra API call is needed for search. */
+    val filteredCharacters: List<CharacterUi>
+        get() = if (searchQuery.isBlank()) characters
+                else characters.filter {
+                    it.name?.contains(searchQuery, ignoreCase = true) == true
+                }
+}
 
 sealed class CharactersIntent {
     object LoadCharacters : CharactersIntent()
     object LoadNextPage : CharactersIntent()
     data class ToggleFavourite(val character: CharacterUi) : CharactersIntent()
+    data class Search(val query: String) : CharactersIntent()
 }
 
 sealed class CharactersEffect {
@@ -41,12 +50,6 @@ class CharactersViewModel @Inject constructor(
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
 ) : MviViewModel<CharactersState, CharactersIntent, CharactersEffect>() {
 
-    /**
-     * Tracks the active load coroutine so a new request (e.g. pull-to-refresh
-     * while a page is still in-flight) cancels the previous one before starting.
-     * Without this, two concurrent collectors could write to the same state and
-     * produce corrupt pagination — e.g. page 2 results overwriting a fresh page 1.
-     */
     private var loadJob: Job? = null
 
     override fun createInitialState(): CharactersState = CharactersState()
@@ -66,14 +69,10 @@ class CharactersViewModel @Inject constructor(
                 }
             }
             is CharactersIntent.ToggleFavourite -> toggleFavourite(intent.character)
+            is CharactersIntent.Search -> setState { copy(searchQuery = intent.query) }
         }
     }
 
-    /**
-     * Loads a page of characters. Pagination and favourites are intentionally decoupled:
-     * this function only manages the list and page state; [observeFavourites] independently
-     * keeps the isFavourite flag up-to-date on the accumulated list.
-     */
     private fun loadCharacters(page: Int, isNextPage: Boolean) {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -120,10 +119,6 @@ class CharactersViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Runs for the lifetime of the ViewModel, reactively updating the isFavourite flag
-     * on every item whenever the favourites set changes — without touching pagination state.
-     */
     private fun observeFavourites() {
         viewModelScope.launch {
             getFavouriteCoverUrlsUseCase().collectLatest { favouriteUrls ->
