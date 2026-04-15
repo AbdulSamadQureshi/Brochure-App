@@ -8,7 +8,6 @@ import com.bonial.data.local.BrochuresDao
 import com.bonial.data.local.BrochuresDatabase
 import com.bonial.data.local.FavouritesDao
 import com.bonial.data.remote.service.CharactersApiService
-import com.squareup.anvil.annotations.ContributesTo
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -20,7 +19,6 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-@ContributesTo(SingletonComponent::class)
 object DataModule {
 
     @Provides

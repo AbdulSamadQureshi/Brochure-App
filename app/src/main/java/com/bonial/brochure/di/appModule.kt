@@ -3,7 +3,6 @@ package com.bonial.brochure.di
 import com.bonial.brochure.BuildConfig
 import com.bonial.core.preferences.UserPreferencesDataStore
 import com.bonial.network.RetrofitClient
-import com.squareup.anvil.annotations.ContributesTo
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +12,6 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-@ContributesTo(SingletonComponent::class)
 object NetworkModule {
 
     @Provides

@@ -1,8 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.anvil)
 }
 
 android {
@@ -30,7 +28,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
-    implementation(libs.anvil.annotations)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.retrofit.core)
     implementation(libs.room.runtime)

@@ -2,9 +2,9 @@ package com.bonial.data.repository
 
 import app.cash.turbine.test
 import com.bonial.data.remote.service.CharactersApiService
-import com.bonial.domain.model.network.response.CharacterDto
-import com.bonial.domain.model.network.response.CharacterResponseDto
-import com.bonial.domain.model.network.response.PageInfoDto
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
+import com.bonial.data.remote.model.PageInfoDto
 import com.bonial.domain.model.network.response.Request
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking

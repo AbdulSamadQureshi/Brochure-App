@@ -1,10 +1,10 @@
 package com.bonial.data.mapper
 
-import com.bonial.domain.model.network.response.CharacterDto
-import com.bonial.domain.model.network.response.CharacterResponseDto
-import com.bonial.domain.model.network.response.LocationDto
-import com.bonial.domain.model.network.response.OriginDto
-import com.bonial.domain.model.network.response.PageInfoDto
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
+import com.bonial.data.remote.model.LocationDto
+import com.bonial.data.remote.model.OriginDto
+import com.bonial.data.remote.model.PageInfoDto
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 

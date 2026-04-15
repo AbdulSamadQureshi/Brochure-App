@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -65,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -113,15 +115,16 @@ fun CharactersScreen(
             }
     }
 
-    Box(
+    Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .testTag("characters_screen")
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center,
-    ) {
+            .testTag("characters_screen"),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize()) {
-            // Search bar — always visible so user can search even after pagination
+            // Search bar — always visible so user can search even after pagination.
+            // Top padding offsets the status bar so the bar never sits behind it.
             DockedSearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
@@ -147,7 +150,11 @@ fun CharactersScreen(
                 onExpandedChange = {},
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        top = innerPadding.calculateTopPadding() + 8.dp,
+                        bottom = 8.dp,
+                    ),
             ) {}
 
             Box(
@@ -157,7 +164,7 @@ fun CharactersScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 when {
-                    state.isLoading -> CharactersLoadingGrid()
+                    state.isLoading -> CharactersLoadingGrid(bottomPadding = innerPadding.calculateBottomPadding())
                     state.error != null && state.characters.isEmpty() -> ErrorMessage(
                         message = state.error,
                         onRetry = { viewModel.sendIntent(CharactersIntent.LoadCharacters) },
@@ -172,12 +179,9 @@ fun CharactersScreen(
                         onFavouriteClick = { character ->
                             viewModel.sendIntent(CharactersIntent.ToggleFavourite(character))
                         },
+                        bottomPadding = innerPadding.calculateBottomPadding(),
                     )
                 }
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
             }
         }
     }
@@ -232,12 +236,12 @@ fun EmptySearchState(query: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CharactersLoadingGrid() {
+fun CharactersLoadingGrid(bottomPadding: Dp = 0.dp) {
     val configuration = LocalConfiguration.current
     val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomPadding),
         modifier = Modifier.fillMaxSize(),
     ) {
         items(10) { CharacterShimmerItem() }
@@ -252,6 +256,7 @@ fun CharactersGrid(
     onCharacterClick: (Int) -> Unit,
     onFavouriteClick: (CharacterUi) -> Unit,
     modifier: Modifier = Modifier,
+    bottomPadding: Dp = 0.dp,
 ) {
     val configuration = LocalConfiguration.current
     val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
@@ -259,7 +264,7 @@ fun CharactersGrid(
     LazyVerticalGrid(
         state = lazyGridState,
         columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomPadding),
         modifier = modifier
             .fillMaxSize()
             .testTag("characters_grid"),
