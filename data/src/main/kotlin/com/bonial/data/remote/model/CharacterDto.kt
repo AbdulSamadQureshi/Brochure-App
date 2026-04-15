@@ -1,10 +1,7 @@
-package com.bonial.domain.model.network.response
+package com.bonial.data.remote.model
 
-import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 data class CharacterDto(
     @SerializedName("id")
     val id: Int = 0,
@@ -22,4 +19,4 @@ data class CharacterDto(
     val origin: OriginDto? = null,
     @SerializedName("location")
     val location: LocationDto? = null,
-) : Parcelable
+)

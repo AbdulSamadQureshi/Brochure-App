@@ -1,10 +1,7 @@
-package com.bonial.domain.model.network.response
+package com.bonial.data.remote.model
 
-import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 data class PageInfoDto(
     @SerializedName("count")
     val count: Int = 0,
@@ -14,4 +11,4 @@ data class PageInfoDto(
     val next: String? = null,
     @SerializedName("prev")
     val prev: String? = null,
-) : Parcelable
+)

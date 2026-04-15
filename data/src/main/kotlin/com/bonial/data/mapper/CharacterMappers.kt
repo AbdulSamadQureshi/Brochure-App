@@ -2,8 +2,8 @@ package com.bonial.data.mapper
 
 import com.bonial.domain.model.Character
 import com.bonial.domain.model.CharacterDetail
-import com.bonial.domain.model.network.response.CharacterDto
-import com.bonial.domain.model.network.response.CharacterResponseDto
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
 import com.bonial.domain.repository.CharactersPage
 
 /**
