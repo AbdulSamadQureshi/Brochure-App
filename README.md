@@ -1,181 +1,137 @@
-# Bonial Coding Challenge — Brochure App
+# Solution
 
-An Android application that displays nearby brochures, built with a multi-module Clean Architecture approach and modern Jetpack libraries.
+## Overview
 
-## Project Structure
+This project is a Rick & Morty character browser built on a clean, scalable Android architecture. It was developed as a coding challenge and covers the full requirements list: browsing a paginated list, viewing character details, favouriting items, searching, sharing, and graceful error/empty-state handling.
 
-The project follows **Clean Architecture** principles divided into five modules:
-
-- **`:app`** — Presentation layer: Compose UI, ViewModels, MVI state management
-- **`:domain`** — Pure Kotlin business logic: Use Cases, Domain Models, Repository Interfaces
-- **`:data`** — Data layer: Repository implementations, Room database, remote API service
-- **`:network`** — Networking: Retrofit configuration, OkHttp interceptors (auth, logging)
-- **`:core`** — Shared utilities: MVI base classes, SharedPrefsManager, UI extensions
+---
 
 ## Architecture
 
-### Pattern: Clean Architecture + MVI
-
-Each screen follows a strict unidirectional data flow:
+The app follows **Clean Architecture** split across Gradle modules:
 
 ```
-UI (Compose) → Intent → ViewModel → UseCase → Repository → [Network / Room]
-                ↑                                                    |
-                └─────────── State (StateFlow) ─────────────────────┘
+:app          — Compose UI, ViewModels, navigation
+:domain       — Use-cases, repository interfaces, domain models
+:data         — Repository implementations, Room database
+:network      — Retrofit client, API service, response models
+:core         — Base classes (MviViewModel, BaseUseCase), shared utilities, DataStore
 ```
 
-### Data Flow
+### Presentation pattern — MVI
 
-```mermaid
-graph TD
-    subgraph ":app (Presentation)"
-        UI[Compose UI]
-        VM[BrochuresViewModel]
-    end
+Every screen is driven by a `MviViewModel<State, Intent, Effect>`:
 
-    subgraph ":domain (Business Logic)"
-        UC[BrochuresUseCase]
-        RI[BrochuresRepository Interface]
-    end
+| Type | Role |
+|------|------|
+| **State** | Immutable snapshot rendered by Compose |
+| **Intent** | User actions (load, search, toggle favourite, etc.) |
+| **Effect** | One-shot events (snack-bar errors, navigation) |
 
-    subgraph ":data (Data)"
-        RP[BrochuresRepositoryImpl]
-        API[BrochuresApiService]
-        LOCAL[BrochureLocalDataSource]
-        DB[(Room Database)]
-    end
+`setState {}` atomically updates state; `setEffect {}` emits a single event that the UI collects once.
 
-    subgraph ":network (Remote)"
-        RF[Retrofit / OkHttp]
-    end
+---
 
-    UI -->|Intent| VM
-    VM -->|invoke| UC
-    UC -->|brochures()| RI
-    RI -.->|implements| RP
-    RP -->|network-first| API
-    RP -->|cache on success| LOCAL
-    RP -->|fallback on failure| LOCAL
-    LOCAL --> DB
-    API --> RF
-    RF --> Backend[Remote API]
-    VM -->|StateFlow| UI
+## Feature walkthrough
+
+### Character list
+
+- Paginated via the Rick & Morty REST API (page-based).
+- Infinite scroll: `LoadNextPage` intent fires when the last visible item is reached.
+- A concurrent-request guard (`loadJob?.cancel()`) prevents stale responses from overtaking a newer page load.
+
+### Search
+
+Search is implemented as **local client-side filtering** on the already-fetched page(s):
+
+```kotlin
+val filteredCharacters: List<CharacterUi>
+    get() = if (searchQuery.isBlank()) characters
+            else characters.filter {
+                it.name?.contains(searchQuery, ignoreCase = true) == true
+            }
 ```
 
-### Offline-First Strategy
+**Trade-off**: Local filtering is instant (no debounce, no extra network call) and works offline. The downside is that it only searches the pages already loaded — characters on later pages won't appear until paged in. For a production app with a backend that supports full-text search, the intent handler would instead trigger an API call with a debounced query.
 
-`BrochuresRepositoryImpl` applies a **network-first with cache fallback** approach:
+### Empty states
 
-1. Emit `Request.Loading`
-2. Fetch from network → on success, cache to Room, emit `Request.Success`
-3. On network failure → read from Room:
-   - Non-empty cache → emit `Request.Success` (stale data)
-   - Empty cache → emit `Request.Error`
+Two distinct empty states are shown:
 
-## Tech Stack
+- **No data at all** (`characters` is empty after a successful load) — prompts the user to check back later.
+- **No search results** (`filteredCharacters` is empty but `characters` is not) — prompts the user to try a different term.
 
-| Category | Library |
-|---|---|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Architecture | Clean Architecture, MVI |
-| DI | Hilt 2.58 + Anvil 2.7.0 |
-| Async | Kotlin Coroutines + Flow |
-| Networking | Retrofit 3 + OkHttp 5 |
-| Serialization | Gson (custom `ContentWrapperDeserializer`) |
-| Image Loading | Coil 2.7 |
-| Local Storage | Room 2.6 + SharedPreferences |
-| Build | Gradle Version Catalog (`libs.versions.toml`) |
-| Code Quality | Detekt + ktlint |
-| CI | GitHub Actions |
+### Error state with retry
 
-## Testing Strategy
+When the API call fails, the error message is shown with a **Retry** button that re-dispatches `LoadCharacters` to attempt the request again.
 
-Tests are organised by layer, with each layer testing its own responsibilities:
+### Character detail
 
-### Unit Tests
+- Hero image uses `ContentScale.Fit` to display the full image without cropping or upscaling artefacts. The Rick & Morty API returns 300×300 px images; `Crop` would stretch them in the 320 dp hero box and cause visible blur.
+- Metadata rows: species, gender, origin, last known location.
+- Status chip (Alive / Dead / Unknown) with colour-coded dot.
+- Slide-up animation on content card.
 
-| Test | What it covers |
-|---|---|
-| `BrochuresViewModelTest` | State transitions (Loading → Success/Error), intent handling |
-| `BrochuresUseCaseTest` | Distance filtering (< 5 km), content type filtering, Loading/Error passthrough |
-| `BrochuresRepositoryImplTest` | Network success + cache write, cache fallback, empty cache → error |
-| `BrochureLocalDataSourceImplTest` | DAO delegation, delete-before-insert ordering |
-| `NetworkHelperTest` | `safeApiCall` Flow emissions for success/failure/network errors |
-| `ContentWrapperDeserializerTest` | Custom Gson deserializer for polymorphic content types |
-| `SharedPrefsManagerTest` | Local preference read/write operations |
+### Favourites
 
-### UI / Instrumentation Tests
+Favourites are persisted locally in **Room** (no API involvement). The `imageUrl` is used as the stable key. A single `ToggleFavourite` use-case both inserts and deletes. The `observeFavourites` coroutine in `CharactersViewModel` keeps the list in sync without a full reload.
 
-| Test | What it covers |
-|---|---|
-| `BrochureScreenTest` | Main screen renders, grid is visible on data load |
-| `BrochuresGridTest` | Premium brochures span full width, error placeholder shown on image failure |
+### Share
 
-Run unit tests:
+Tapping the share icon on the detail screen opens the native Android share sheet with the character name, species, status, and image URL pre-filled as plain text.
+
+---
+
+## Data / field mapping
+
+The Rick & Morty API fields map naturally to a marketplace-style listing:
+
+| API field | UI label |
+|-----------|----------|
+| `name` | Title / heading |
+| `species` + `status` | Description tags |
+| `location.name` | Last known location |
+| `image` | Cover / hero image |
+
+There is no price field in the API, so none is shown.
+
+---
+
+## Testing
+
+| Layer | Tool | What's tested |
+|-------|------|---------------|
+| ViewModel | JUnit 4 + Turbine + Coroutines test | State transitions, intent handling |
+| Use-cases | JUnit 4 + Mockito | Happy path, error path |
+| Network | JUnit 4 + MockWebServer | Auth headers, logging level |
+| UI screenshots | Roborazzi + Robolectric | Theme colour regression |
+
+---
+
+## Build instructions
+
 ```bash
+# Clone
+git clone <repo-url>
+cd BonialCodingChallenge
+
+# Run all unit tests
 ./gradlew test
+
+# Run screenshot tests
+./gradlew verifyRoborazziDebug
+
+# Install debug APK
+./gradlew installDebug
 ```
 
-Run instrumentation tests:
-```bash
-./gradlew connectedAndroidTest
-```
+Minimum SDK: **24** · Target/Compile SDK: **36** · Kotlin: **2.2** · Compose BOM: **2025.11**
 
-## Code Quality
+---
 
-```bash
-./gradlew ktlintCheck   # Kotlin style (Android Studio code style, 140-char limit)
-./gradlew detekt        # Static analysis (complexity, coroutines safety, naming)
-```
+## What I would add next
 
-Configuration: `config/detekt/detekt.yml`, `.editorconfig`
-
-## CI/CD
-
-GitHub Actions runs on every push and pull request to `main`/`develop`:
-
-1. **Code Quality** — ktlint + Detekt
-2. **Unit Tests** — `./gradlew test`
-3. **Build** — `assembleDebug` with APK upload
-
-See `.github/workflows/ci.yml`.
-
-## Build Variants
-
-| Variant | Environment | Minification | Notes |
-|---|---|---|---|
-| `debug` | Staging | Off | Debug logging on |
-| `qa` | QA | Off | App ID suffix `.qa` |
-| `staging` | Staging | Off | App ID suffix `.staging` |
-| `release` | Production | **On** (R8 + resource shrinking) | ProGuard rules in `proguard-rules.pro` |
-
-Environment-specific `BASE_URL` and `ENVIRONMENT` values are loaded from `.properties` files (`release.properties`, `qa.properties`, `staging.properties`).
-
-## 🚀 Highlights & Eye-Catching Features
-
-- **Multi-Module Clean Architecture**: A robust decoupled structure (`:app`, `:domain`, `:data`, `:network`, `:core`) designed for scalability and team collaboration.
-- **MVI with StateFlow**: Unidirectional data flow that makes state predictable and UI testing a breeze.
-- **Pagination & Search**: Seamlessly handles infinite scrolling with search query debouncing for a smooth user experience.
-- **Dynamic ProGuard Configuration**: Custom build variants (`release`, `qa`, `staging`) with optimized obfuscation rules to ensure production security without breaking Hilt or Kotlin Serialization.
-- **Meticulous UX**: Precise scroll-state retention using `rememberSaveable` to ensure the user never loses their place when navigating back from details.
-
-## 📊 Code Coverage (JaCoCo)
-
-We take quality seriously. The project uses JaCoCo for comprehensive coverage reporting.
-
-**Latest Coverage Summary:**
-- **Lines**: **80.1%** (483/603)
-- **Instructions**: **69.7%**
-- **Methods**: **70.7%**
-
-You can generate the full HTML report by running:
-```bash
-./gradlew jacocoFullReport
-```
-
-## Known Trade-offs
-
-- **Gson over Kotlinx Serialization**: Gson was retained to preserve the existing custom `ContentWrapperDeserializer`. Kotlinx Serialization is the modern Kotlin-first alternative and would be preferred in a greenfield project.
-- **SharedPreferences for token storage**: The auth token is stored in SharedPreferences via `SharedPrefsManager`. Jetpack DataStore (Preferences) would be the modern replacement; migration is straightforward given the existing abstraction layer.
-- **Single-screen navigation**: The app is single-screen, so Jetpack Navigation Compose was not introduced. It would be the natural next step if a brochure detail screen were added.
+- **Remote search**: debounced API query via a dedicated search endpoint, replacing the local filter for full-catalogue coverage.
+- **Offline support**: cache the first page in Room so the list is visible without a network connection.
+- **Pagination with Paging 3**: replace the manual page-counter with `Pager` + `LazyPagingItems` for cleaner load-state handling.
+- **Analytics / logging**: structured event tracking on list interactions and detail views.
