@@ -18,16 +18,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
 
+private const val SHIMMER_OFFSET_MULTIPLIER = 2f
+private const val SHIMMER_DURATION = 1200
+
 fun Modifier.shimmerEffect(): Modifier =
     composed {
         var size by remember { mutableStateOf(IntSize.Zero) }
         val transition = rememberInfiniteTransition(label = "shimmer")
         val startOffsetX by transition.animateFloat(
-            initialValue = -2 * size.width.toFloat(),
-            targetValue = 2 * size.width.toFloat(),
+            initialValue = -SHIMMER_OFFSET_MULTIPLIER * size.width.toFloat(),
+            targetValue = SHIMMER_OFFSET_MULTIPLIER * size.width.toFloat(),
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(1200, easing = LinearEasing),
+                    animation = tween(SHIMMER_DURATION, easing = LinearEasing),
                 ),
             label = "shimmer",
         )
