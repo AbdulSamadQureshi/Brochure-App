@@ -88,13 +88,9 @@ configure<ApplicationExtension> {
         }
     }
 
-    androidComponents {
-        beforeVariants { variantBuilder ->
-            if (variantBuilder.buildType == "debug") {
-                variantBuilder.enable = false
-            }
-        }
-    }
+    // Note: the debug build type is intentionally left with minimal config above.
+    // We do NOT disable it via beforeVariants because doing so also kills the
+    // testDebugUnitTest task, making `./gradlew test` a no-op.
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
