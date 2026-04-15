@@ -440,6 +440,7 @@ fun CharacterImage(
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(imageUrl)
+            .placeholder(R.drawable.placeholder_image)
             .crossfade(true)
             .build(),
         contentDescription = contentDescription ?: stringResource(R.string.content_desc_character_image),

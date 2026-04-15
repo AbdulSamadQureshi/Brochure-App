@@ -26,6 +26,7 @@ data class CharacterDetailState(
 
 sealed class CharacterDetailIntent {
     object ToggleFavourite : CharacterDetailIntent()
+    object Retry : CharacterDetailIntent()
 }
 
 sealed class CharacterDetailEffect
@@ -56,6 +57,7 @@ class CharacterDetailViewModel @Inject constructor(
     override fun handleIntent(intent: CharacterDetailIntent) {
         when (intent) {
             is CharacterDetailIntent.ToggleFavourite -> toggleFavourite()
+            is CharacterDetailIntent.Retry -> loadCharacter(route.id)
         }
     }
 

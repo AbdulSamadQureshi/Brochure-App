@@ -92,6 +92,71 @@ class CharactersViewModelTest {
     }
 
     @Test
+    fun `Search intent updates searchQuery and filteredCharacters reflects the query`() = runTest {
+        val page = CharactersPage(
+            characters = listOf(
+                Character(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png"),
+                Character(2, "Morty Smith", "Alive", "Human", "https://img/morty.png"),
+                Character(3, "Rick Prime", "Alive", "Human", "https://img/rick-prime.png"),
+            ),
+            totalPages = 1,
+        )
+        whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
+        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+
+        val vm = viewModel()
+
+        // Wait for initial load to finish.
+        vm.uiState.test {
+            var state = awaitItem()
+            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        vm.sendIntent(CharactersIntent.Search("Rick"))
+
+        vm.uiState.test {
+            val state = awaitItem()
+            assertThat(state.searchQuery).isEqualTo("Rick")
+            assertThat(state.filteredCharacters.map(CharacterUi::name))
+                .containsExactly("Rick Sanchez", "Rick Prime")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `Search with empty query shows all characters`() = runTest {
+        val page = CharactersPage(
+            characters = listOf(
+                Character(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png"),
+                Character(2, "Morty Smith", "Alive", "Human", "https://img/morty.png"),
+            ),
+            totalPages = 1,
+        )
+        whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
+        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+
+        val vm = viewModel()
+
+        vm.uiState.test {
+            var state = awaitItem()
+            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // Apply then clear the search.
+        vm.sendIntent(CharactersIntent.Search("Rick"))
+        vm.sendIntent(CharactersIntent.Search(""))
+
+        vm.uiState.test {
+            val state = awaitItem()
+            assertThat(state.searchQuery).isEmpty()
+            assertThat(state.filteredCharacters).hasSize(2)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `ToggleFavourite ignores characters without an imageUrl`() = runTest {
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
         whenever(charactersUseCase(1)).thenReturn(

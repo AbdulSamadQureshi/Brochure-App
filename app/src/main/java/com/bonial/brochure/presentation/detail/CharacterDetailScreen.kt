@@ -1,5 +1,6 @@
 package com.bonial.brochure.presentation.detail
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -19,13 +20,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,6 +59,7 @@ import com.bonial.brochure.R
 import com.bonial.brochure.presentation.home.CharacterDetailIntent
 import com.bonial.brochure.presentation.home.CharacterDetailViewModel
 import com.bonial.brochure.presentation.home.ErrorMessage
+import com.bonial.brochure.presentation.home.ImageErrorPlaceholder
 import com.bonial.brochure.presentation.model.CharacterDetailUi
 import com.bonial.brochure.presentation.theme.StatusAliveBg
 import com.bonial.brochure.presentation.theme.StatusAliveText
@@ -145,13 +146,60 @@ fun CharacterDetailScreen(
                 .padding(innerPadding),
             contentAlignment = Alignment.Center,
         ) {
-            // Local val enables smart-cast inside the when branch — the delegated
-            // `state` property from collectAsStateWithLifecycle() cannot be smart-cast directly.
             val character = state.character
             when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.size(48.dp))
-                state.error != null -> ErrorMessage(message = state.error)
+                state.isLoading -> CharacterDetailShimmer()
+                state.error != null -> ErrorMessage(
+                    message = state.error,
+                    onRetry = { viewModel.sendIntent(CharacterDetailIntent.Retry) },
+                )
                 character != null -> CharacterDetailContent(character = character)
+            }
+        }
+    }
+}
+
+/**
+ * Skeleton loader that mirrors the real detail layout so there's no jarring
+ * layout shift when content arrives.
+ */
+@Composable
+private fun CharacterDetailShimmer() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("detail_shimmer"),
+    ) {
+        // Hero image placeholder
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(320.dp)
+                .shimmerEffect(),
+        )
+        // Metadata rows placeholder
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+        ) {
+            // Name shimmer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(24.dp)
+                    .shimmerEffect(),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            // Detail row shimmers
+            repeat(4) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .shimmerEffect(),
+                )
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -160,6 +208,7 @@ fun CharacterDetailScreen(
 @Composable
 private fun CharacterDetailContent(character: CharacterDetailUi) {
     var imageLoaded by remember { mutableStateOf(false) }
+    var imageError by remember { mutableStateOf(false) }
     var contentVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { contentVisible = true }
 
@@ -174,25 +223,45 @@ private fun CharacterDetailContent(character: CharacterDetailUi) {
                 .fillMaxWidth()
                 .height(320.dp),
         ) {
-            if (!imageLoaded) {
+            // Shimmer shown while image is in-flight
+            if (!imageLoaded && !imageError) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .shimmerEffect(),
                 )
             }
+
+            // Actual image — placeholder_image shown by Coil while network is loading;
+            // we track Success/Error to hide the shimmer and show the error overlay.
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(character.imageUrl)
+                    .placeholder(R.drawable.placeholder_image)
                     .crossfade(400)
                     .build(),
                 contentDescription = character.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
                 onState = { state ->
-                    if (state is AsyncImagePainter.State.Success) imageLoaded = true
+                    when (state) {
+                        is AsyncImagePainter.State.Success -> {
+                            imageLoaded = true
+                            imageError = false
+                        }
+                        is AsyncImagePainter.State.Error -> {
+                            imageError = true
+                            imageLoaded = false
+                        }
+                        else -> Unit
+                    }
                 },
             )
+
+            // Error overlay — shown when Coil could not load the image
+            if (imageError) {
+                ImageErrorPlaceholder(modifier = Modifier.fillMaxSize())
+            }
         }
 
         // Content card slides up after image
