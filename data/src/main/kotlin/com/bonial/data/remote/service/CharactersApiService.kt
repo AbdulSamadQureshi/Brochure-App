@@ -1,7 +1,7 @@
-package com.bonial.domain.remote.service
+package com.bonial.data.remote.service
 
-import com.bonial.domain.remote.model.CharacterDto
-import com.bonial.domain.remote.model.CharacterResponseDto
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -10,7 +10,7 @@ interface CharactersApiService {
     @GET("character")
     suspend fun characters(
         @Query("page") page: Int,
-        @Query("name") name: String? = null
+        @Query("name") name: String? = null,
     ): CharacterResponseDto
 
     @GET("character/{id}")

@@ -1,4 +1,4 @@
-package com.bonial.domain.utils
+package com.bonial.utils
 
 import app.cash.turbine.test
 import com.bonial.domain.model.network.response.Request

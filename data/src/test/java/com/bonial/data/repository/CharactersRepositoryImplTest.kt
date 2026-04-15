@@ -1,10 +1,10 @@
-package com.bonial.domain.repository
+package com.bonial.data.repository
 
 import app.cash.turbine.test
-import com.bonial.domain.remote.service.CharactersApiService
-import com.bonial.domain.remote.model.CharacterDto
-import com.bonial.domain.remote.model.CharacterResponseDto
-import com.bonial.domain.remote.model.PageInfoDto
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
+import com.bonial.data.remote.model.PageInfoDto
+import com.bonial.data.remote.service.CharactersApiService
 import com.bonial.domain.model.network.response.Request
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
@@ -19,6 +19,13 @@ import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
 
+/**
+ * Covers the behaviour that makes the repository more than a type alias:
+ *  - DTO → domain mapping is applied on Success
+ *  - Loading/Error states survive the mapping step (via `mapSuccess`)
+ *  - Transport failures are surfaced as `Request.Error` rather than thrown
+ *  - The `name` filter param is forwarded to the API service
+ */
 class CharactersRepositoryImplTest {
 
     private val apiService: CharactersApiService = mock()
@@ -50,8 +57,43 @@ class CharactersRepositoryImplTest {
     }
 
     @Test
+    fun `characters forwards name filter to api service`() = runBlocking {
+        val response = CharacterResponseDto(
+            info = PageInfoDto(pages = 1),
+            results = listOf(CharacterDto(id = 1, name = "Rick Sanchez")),
+        )
+        whenever(apiService.characters(page = 1, name = "Rick")).thenReturn(response)
+
+        repository.characters(page = 1, name = "Rick").test {
+            assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
+            val success = awaitItem() as Request.Success
+            assertThat(success.data.characters.single().name).isEqualTo("Rick Sanchez")
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `characters with null name returns unfiltered results`() = runBlocking {
+        val response = CharacterResponseDto(
+            info = PageInfoDto(pages = 2),
+            results = listOf(
+                CharacterDto(id = 1, name = "Rick"),
+                CharacterDto(id = 2, name = "Morty"),
+            ),
+        )
+        whenever(apiService.characters(page = 1, name = null)).thenReturn(response)
+
+        repository.characters(page = 1, name = null).test {
+            assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
+            val success = awaitItem() as Request.Success
+            assertThat(success.data.characters).hasSize(2)
+            awaitComplete()
+        }
+    }
+
+    @Test
     fun `characters emits Error when api throws IOException`() = runBlocking {
-        apiService.stub { onBlocking { characters(1) } doAnswer { throw IOException("offline") } }
+        apiService.stub { on { characters(1) } doAnswer { throw IOException("offline") } }
 
         repository.characters(page = 1).test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
@@ -80,7 +122,7 @@ class CharactersRepositoryImplTest {
     @Test
     fun `character emits Error with http code when api throws HttpException`() = runBlocking {
         val httpResponse = Response.error<CharacterDto>(404, "".toResponseBody())
-        apiService.stub { onBlocking { character(99) } doAnswer { throw HttpException(httpResponse) } }
+        apiService.stub { on { character(99) } doAnswer { throw HttpException(httpResponse) } }
 
         repository.character(id = 99).test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)

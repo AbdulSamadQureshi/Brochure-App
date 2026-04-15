@@ -11,14 +11,11 @@ import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -62,24 +59,37 @@ class CharactersViewModel
         private val getEnrichedCharactersUseCase: GetEnrichedCharactersUseCase,
         private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
     ) : MviViewModel<CharactersState, CharactersIntent, CharactersEffect>() {
-        private val searchQueryFlow = MutableStateFlow("")
+        /**
+         * Pair<query, generation> — incrementing generation forces re-emission from StateFlow
+         * even when the query string hasn't changed (e.g. retry after an error).
+         */
+        private val searchParams = MutableStateFlow("" to 0)
+
+        /**
+         * Tracks the currently running pagination coroutine so it can be cancelled
+         * immediately when a new search fires, preventing stale page-N results from
+         * landing on top of the fresh result set.
+         */
+        private var paginationJob: Job? = null
 
         override fun createInitialState(): CharactersState = CharactersState()
 
         init {
-            observeSearchAndFavourites()
+            observeSearch()
             sendIntent(CharactersIntent.LoadCharacters)
         }
 
         override fun handleIntent(intent: CharactersIntent) {
             when (intent) {
                 is CharactersIntent.LoadCharacters -> {
-                    searchQueryFlow.update { it } // Trigger search with current query
+                    // Increment generation so StateFlow re-emits even if query is unchanged.
+                    searchParams.update { (query, gen) -> query to gen + 1 }
                 }
 
                 is CharactersIntent.LoadNextPage -> {
                     val state = uiState.value
-                    if (!state.isLoadingNextPage && state.currentPage < state.totalPages) {
+                    // Guard: skip if initial load is still running OR we're already on the last page.
+                    if (!state.isLoading && !state.isLoadingNextPage && state.currentPage < state.totalPages) {
                         loadNextPage(
                             page = state.currentPage + 1,
                             query = state.searchQuery,
@@ -90,6 +100,11 @@ class CharactersViewModel
                 is CharactersIntent.ToggleFavourite -> toggleFavourite(intent.character)
 
                 is CharactersIntent.Search -> {
+                    // Cancel any in-flight pagination so stale results don't arrive after the
+                    // new search result set lands.
+                    paginationJob?.cancel()
+                    paginationJob = null
+
                     setState {
                         copy(
                             searchQuery = intent.query,
@@ -98,18 +113,24 @@ class CharactersViewModel
                             error = null,
                         )
                     }
-                    searchQueryFlow.value = intent.query
+                    // Emit with generation=0 for a brand-new query (debounce applies).
+                    searchParams.value = intent.query to 0
                 }
             }
         }
 
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        private fun observeSearchAndFavourites() {
+        private fun observeSearch() {
             viewModelScope.launch {
-                searchQueryFlow
-                    .debounce { query -> if (query.isEmpty()) 0L else SEARCH_DEBOUNCE_MS }
-                    .distinctUntilChanged()
-                    .flatMapLatest { query ->
+                searchParams
+                    .debounce { (query, gen) ->
+                        when {
+                            gen > 0 -> 0L           // Retry — fire immediately.
+                            query.isEmpty() -> 0L   // Clear — fire immediately.
+                            else -> SEARCH_DEBOUNCE_MS
+                        }
+                    }
+                    .flatMapLatest { (query, _) ->
                         getEnrichedCharactersUseCase(CharactersParams(page = 1, name = query))
                     }.collect { response ->
                         handleResponse(
@@ -125,7 +146,7 @@ class CharactersViewModel
             page: Int,
             query: String?,
         ) {
-            viewModelScope.launch {
+            paginationJob = viewModelScope.launch {
                 setState { copy(isLoadingNextPage = true) }
 
                 getEnrichedCharactersUseCase(CharactersParams(page, query)).collectLatest { response ->
@@ -201,6 +222,6 @@ class CharactersViewModel
         }
 
         companion object {
-            private const val SEARCH_DEBOUNCE_MS = 500L
+            private const val SEARCH_DEBOUNCE_MS = 1_000L
         }
     }

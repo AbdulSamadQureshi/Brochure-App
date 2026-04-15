@@ -7,12 +7,14 @@ import com.bonial.data.local.BrochureLocalDataSourceImpl
 import com.bonial.data.local.BrochuresDao
 import com.bonial.data.local.BrochuresDatabase
 import com.bonial.data.local.FavouritesDao
+import com.bonial.data.remote.service.CharactersApiService
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
 import javax.inject.Singleton
 
 @Module
@@ -42,6 +44,11 @@ object DataModule {
     fun provideFavouritesDao(database: BrochuresDatabase): FavouritesDao {
         return database.favouritesDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideCharactersApiService(retrofit: Retrofit): CharactersApiService =
+        retrofit.create(CharactersApiService::class.java)
 }
 
 @Module

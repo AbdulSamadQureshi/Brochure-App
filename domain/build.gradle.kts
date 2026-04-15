@@ -14,6 +14,12 @@ android {
         minSdk = 24
     }
 
+    buildTypes {
+        getByName("debug") {
+            enableUnitTestCoverage = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -27,11 +33,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":network"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
-    implementation(libs.gson)
-    implementation(libs.retrofit.core)
     implementation(libs.kotlinx.coroutines.core)
 
     // Test dependencies

@@ -1,9 +1,9 @@
-package com.bonial.domain.mapper
+package com.bonial.data.mapper
 
+import com.bonial.data.remote.model.CharacterDto
+import com.bonial.data.remote.model.CharacterResponseDto
 import com.bonial.domain.model.Character
 import com.bonial.domain.model.CharacterDetail
-import com.bonial.domain.remote.model.CharacterDto
-import com.bonial.domain.remote.model.CharacterResponseDto
 import com.bonial.domain.repository.CharactersPage
 
 internal fun CharacterDto.toDomain(): Character = Character(

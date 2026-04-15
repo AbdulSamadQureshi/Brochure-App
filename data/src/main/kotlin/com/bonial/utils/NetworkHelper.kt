@@ -1,4 +1,4 @@
-package com.bonial.domain.utils
+package com.bonial.utils
 
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request

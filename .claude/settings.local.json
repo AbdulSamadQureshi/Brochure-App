@@ -17,7 +17,15 @@
       "Bash(git commit -m ':*)",
       "Bash(rm /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/.git/worktrees/jolly-tharp/index.lock)",
       "Bash(git -C /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/.claude/worktrees/jolly-tharp add -A)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(grep -r \"@Module\\\\|@Provides\\\\|@Binds\\\\|@InstallIn\" /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge --include=\"*.kt\" -not -path \"*/build/*\")",
+      "Bash(ls /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/*/build.gradle.kts)",
+      "Bash(./gradlew :domain:compileDebugKotlin :data:compileDebugKotlin :app:compileDebugKotlin)",
+      "Bash(./gradlew :domain:compileDebugKotlin :data:compileDebugKotlin :app:kspDebugKotlin)",
+      "Bash(./gradlew :domain:compileDebugKotlin :data:compileDebugKotlin)",
+      "Bash(./gradlew testDebugUnitTest)",
+      "Bash(./gradlew :domain:compileDebugUnitTestKotlin)"
     ]
   }
 }
