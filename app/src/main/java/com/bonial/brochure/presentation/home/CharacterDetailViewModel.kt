@@ -12,6 +12,7 @@ import com.bonial.domain.useCase.characters.CharacterDetailUseCase
 import com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,6 +40,13 @@ class CharacterDetailViewModel @Inject constructor(
 
     private val route = savedStateHandle.toRoute<CharacterDetailRoute>()
 
+    /**
+     * Tracks the active load coroutine. If the screen is somehow recreated or the
+     * id changes (deep-link scenario), the in-flight request is cancelled before
+     * starting a new one so stale results can never overwrite a fresher response.
+     */
+    private var loadJob: Job? = null
+
     override fun createInitialState(): CharacterDetailState = CharacterDetailState()
 
     init {
@@ -52,7 +60,8 @@ class CharacterDetailViewModel @Inject constructor(
     }
 
     private fun loadCharacter(id: Int) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             setState { copy(isLoading = true, error = null) }
             characterDetailUseCase(id).collectLatest { response ->
                 when (response) {

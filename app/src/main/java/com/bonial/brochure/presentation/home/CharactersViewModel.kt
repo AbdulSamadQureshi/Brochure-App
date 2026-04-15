@@ -9,6 +9,7 @@ import com.bonial.domain.useCase.characters.CharactersUseCase
 import com.bonial.domain.useCase.favourites.GetFavouriteCoverUrlsUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -40,6 +41,14 @@ class CharactersViewModel @Inject constructor(
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
 ) : MviViewModel<CharactersState, CharactersIntent, CharactersEffect>() {
 
+    /**
+     * Tracks the active load coroutine so a new request (e.g. pull-to-refresh
+     * while a page is still in-flight) cancels the previous one before starting.
+     * Without this, two concurrent collectors could write to the same state and
+     * produce corrupt pagination — e.g. page 2 results overwriting a fresh page 1.
+     */
+    private var loadJob: Job? = null
+
     override fun createInitialState(): CharactersState = CharactersState()
 
     init {
@@ -66,7 +75,8 @@ class CharactersViewModel @Inject constructor(
      * keeps the isFavourite flag up-to-date on the accumulated list.
      */
     private fun loadCharacters(page: Int, isNextPage: Boolean) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             if (isNextPage) {
                 setState { copy(isLoadingNextPage = true) }
             } else {
