@@ -69,6 +69,7 @@ configure<ApplicationExtension> {
             isShrinkResources = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            enableUnitTestCoverage = true
         }
 
         val qa by creating {

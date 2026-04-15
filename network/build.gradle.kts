@@ -34,6 +34,7 @@ android {
             }
         }
         getByName("debug") {
+            enableUnitTestCoverage = true
             val props = Properties()
             val propsFile = rootProject.file("debug.properties")
             if (propsFile.exists()) {
