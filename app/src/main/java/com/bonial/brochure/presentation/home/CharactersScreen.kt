@@ -90,10 +90,16 @@ fun CharactersScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
+
+    // Reset scroll position when search query changes (including clearing search)
+    LaunchedEffect(state.searchQuery) {
+        lazyGridState.scrollToItem(0)
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val shouldLoadMore by remember {
+    val shouldLoadMore by remember(lazyGridState) {
         derivedStateOf {
             val lastVisible = lazyGridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
             val totalItems = lazyGridState.layoutInfo.totalItemsCount
@@ -165,7 +171,9 @@ fun CharactersScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 when {
-                    state.isLoading -> CharactersLoadingGrid(bottomPadding = innerPadding.calculateBottomPadding())
+                    state.isLoading || (state.isInitialLoading && state.characters.isEmpty()) -> {
+                        CharactersLoadingGrid(bottomPadding = innerPadding.calculateBottomPadding())
+                    }
                     state.error != null && state.characters.isEmpty() -> ErrorMessage(
                         message = state.error,
                         onRetry = { viewModel.sendIntent(CharactersIntent.LoadCharacters) },

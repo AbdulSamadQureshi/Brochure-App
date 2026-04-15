@@ -24,7 +24,7 @@ abstract class MviViewModel<S, I, E> : ViewModel() {
     private val _uiState = MutableStateFlow(initialState)
     val uiState: StateFlow<S> = _uiState.asStateFlow()
 
-    private val _intent = Channel<I>(Channel.UNLIMITED)
+    private val _intent = Channel<I>(Channel.BUFFERED)
     private val intent = _intent.receiveAsFlow()
 
     private val _effect = Channel<E>(Channel.CONFLATED)
