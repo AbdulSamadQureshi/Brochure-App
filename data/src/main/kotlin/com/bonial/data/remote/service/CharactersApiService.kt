@@ -14,5 +14,7 @@ interface CharactersApiService {
     ): CharacterResponseDto
 
     @GET("character/{id}")
-    suspend fun character(@Path("id") id: Int): CharacterDto
+    suspend fun character(
+        @Path("id") id: Int,
+    ): CharacterDto
 }

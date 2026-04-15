@@ -6,11 +6,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LocalStorageRepositoryImpl @Inject constructor(
-    private val userPreferencesDataStore: UserPreferencesDataStore,
-) : LocalStorageRepository {
-
-    override suspend fun clearData() {
-        userPreferencesDataStore.clearAll()
+class LocalStorageRepositoryImpl
+    @Inject
+    constructor(
+        private val userPreferencesDataStore: UserPreferencesDataStore,
+    ) : LocalStorageRepository {
+        override suspend fun clearData() {
+            userPreferencesDataStore.clearAll()
+        }
     }
-}

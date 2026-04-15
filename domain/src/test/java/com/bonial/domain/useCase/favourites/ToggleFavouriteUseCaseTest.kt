@@ -9,7 +9,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 
 class ToggleFavouriteUseCaseTest {
-
     private val repository: FavouritesRepository = mock()
     private lateinit var useCase: ToggleFavouriteUseCase
 
@@ -19,16 +18,18 @@ class ToggleFavouriteUseCaseTest {
     }
 
     @Test
-    fun `invoke calls addFavourite when not currently favourite`() = runBlocking {
-        useCase("https://example.com/cover.jpg", isFavourite = false)
-        verify(repository).addFavourite("https://example.com/cover.jpg")
-        verifyNoMoreInteractions(repository)
-    }
+    fun `invoke calls addFavourite when not currently favourite`() =
+        runBlocking {
+            useCase("https://example.com/cover.jpg", isFavourite = false)
+            verify(repository).addFavourite("https://example.com/cover.jpg")
+            verifyNoMoreInteractions(repository)
+        }
 
     @Test
-    fun `invoke calls removeFavourite when currently favourite`() = runBlocking {
-        useCase("https://example.com/cover.jpg", isFavourite = true)
-        verify(repository).removeFavourite("https://example.com/cover.jpg")
-        verifyNoMoreInteractions(repository)
-    }
+    fun `invoke calls removeFavourite when currently favourite`() =
+        runBlocking {
+            useCase("https://example.com/cover.jpg", isFavourite = true)
+            verify(repository).removeFavourite("https://example.com/cover.jpg")
+            verifyNoMoreInteractions(repository)
+        }
 }

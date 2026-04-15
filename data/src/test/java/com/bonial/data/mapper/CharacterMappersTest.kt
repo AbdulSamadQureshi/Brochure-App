@@ -9,16 +9,16 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class CharacterMappersTest {
-
     @Test
     fun `toDomain copies id, name, status, species and image`() {
-        val dto = CharacterDto(
-            id = 42,
-            name = "Rick",
-            status = "Alive",
-            species = "Human",
-            image = "https://img/rick.png",
-        )
+        val dto =
+            CharacterDto(
+                id = 42,
+                name = "Rick",
+                status = "Alive",
+                species = "Human",
+                image = "https://img/rick.png",
+            )
 
         val character = dto.toDomain()
 
@@ -31,16 +31,17 @@ class CharacterMappersTest {
 
     @Test
     fun `toDomainDetail flattens origin and location to their name fields`() {
-        val dto = CharacterDto(
-            id = 7,
-            name = "Morty",
-            status = "Alive",
-            species = "Human",
-            gender = "Male",
-            image = "https://img/morty.png",
-            origin = OriginDto(name = "Earth (C-137)"),
-            location = LocationDto(name = "Citadel"),
-        )
+        val dto =
+            CharacterDto(
+                id = 7,
+                name = "Morty",
+                status = "Alive",
+                species = "Human",
+                gender = "Male",
+                image = "https://img/morty.png",
+                origin = OriginDto(name = "Earth (C-137)"),
+                location = LocationDto(name = "Citadel"),
+            )
 
         val detail = dto.toDomainDetail()
 
@@ -61,10 +62,11 @@ class CharacterMappersTest {
 
     @Test
     fun `toDomainPage maps results list and reads totalPages from info`() {
-        val response = CharacterResponseDto(
-            info = PageInfoDto(pages = 34),
-            results = listOf(CharacterDto(id = 1), CharacterDto(id = 2)),
-        )
+        val response =
+            CharacterResponseDto(
+                info = PageInfoDto(pages = 34),
+                results = listOf(CharacterDto(id = 1), CharacterDto(id = 2)),
+            )
 
         val page = response.toDomainPage()
 

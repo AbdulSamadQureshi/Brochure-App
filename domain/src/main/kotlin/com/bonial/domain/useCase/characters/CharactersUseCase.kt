@@ -19,11 +19,11 @@ data class CharactersParams(
     val name: String? = null,
 )
 
-class CharactersUseCase @Inject constructor(
-    private val repository: CharactersRepository,
-) : BaseUseCase<CharactersParams, Flow<Request<CharactersPage>>> {
-
-    override suspend fun invoke(params: CharactersParams): Flow<Request<CharactersPage>> {
-        return repository.characters(params.page, params.name)
+class CharactersUseCase
+    @Inject
+    constructor(
+        private val repository: CharactersRepository,
+    ) : BaseUseCase<CharactersParams, Flow<Request<CharactersPage>>> {
+        override suspend fun invoke(params: CharactersParams): Flow<Request<CharactersPage>> =
+            repository.characters(params.page, params.name)
     }
-}

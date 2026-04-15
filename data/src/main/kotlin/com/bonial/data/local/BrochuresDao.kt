@@ -7,7 +7,6 @@ import androidx.room.Query
 
 @Dao
 interface BrochuresDao {
-
     @Query("SELECT * FROM brochures")
     suspend fun getAll(): List<BrochureEntity>
 

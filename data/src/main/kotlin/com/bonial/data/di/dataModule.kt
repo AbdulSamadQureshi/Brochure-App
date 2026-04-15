@@ -20,44 +20,36 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
-
     @Provides
     @Singleton
-    fun provideBrochuresDatabase(@ApplicationContext context: Context): BrochuresDatabase {
-        return Room.databaseBuilder(
-            context,
-            BrochuresDatabase::class.java,
-            "brochures.db",
-        )
-            .addMigrations(BrochuresDatabase.MIGRATION_1_2)
+    fun provideBrochuresDatabase(
+        @ApplicationContext context: Context,
+    ): BrochuresDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                BrochuresDatabase::class.java,
+                "brochures.db",
+            ).addMigrations(BrochuresDatabase.MIGRATION_1_2)
             .build()
-    }
 
     @Provides
     @Singleton
-    fun provideBrochuresDao(database: BrochuresDatabase): BrochuresDao {
-        return database.brochuresDao()
-    }
+    fun provideBrochuresDao(database: BrochuresDatabase): BrochuresDao = database.brochuresDao()
 
     @Provides
     @Singleton
-    fun provideFavouritesDao(database: BrochuresDatabase): FavouritesDao {
-        return database.favouritesDao()
-    }
+    fun provideFavouritesDao(database: BrochuresDatabase): FavouritesDao = database.favouritesDao()
 
     @Provides
     @Singleton
-    fun provideCharactersApiService(retrofit: Retrofit): CharactersApiService =
-        retrofit.create(CharactersApiService::class.java)
+    fun provideCharactersApiService(retrofit: Retrofit): CharactersApiService = retrofit.create(CharactersApiService::class.java)
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class LocalDataSourceModule {
-
     @Binds
     @Singleton
-    abstract fun bindBrochureLocalDataSource(
-        impl: BrochureLocalDataSourceImpl,
-    ): BrochureLocalDataSource
+    abstract fun bindBrochureLocalDataSource(impl: BrochureLocalDataSourceImpl): BrochureLocalDataSource
 }

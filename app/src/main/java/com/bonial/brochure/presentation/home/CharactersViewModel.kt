@@ -125,12 +125,11 @@ class CharactersViewModel
                 searchParams
                     .debounce { (query, gen) ->
                         when {
-                            gen > 0 -> 0L           // Retry — fire immediately.
-                            query.isEmpty() -> 0L   // Clear — fire immediately.
+                            gen > 0 -> 0L // Retry — fire immediately.
+                            query.isEmpty() -> 0L // Clear — fire immediately.
                             else -> SEARCH_DEBOUNCE_MS
                         }
-                    }
-                    .flatMapLatest { (query, _) ->
+                    }.flatMapLatest { (query, _) ->
                         getEnrichedCharactersUseCase(CharactersParams(page = 1, name = query))
                     }.collect { response ->
                         handleResponse(
@@ -146,13 +145,14 @@ class CharactersViewModel
             page: Int,
             query: String?,
         ) {
-            paginationJob = viewModelScope.launch {
-                setState { copy(isLoadingNextPage = true) }
+            paginationJob =
+                viewModelScope.launch {
+                    setState { copy(isLoadingNextPage = true) }
 
-                getEnrichedCharactersUseCase(CharactersParams(page, query)).collectLatest { response ->
-                    handleResponse(response, isNextPage = true, page = page)
+                    getEnrichedCharactersUseCase(CharactersParams(page, query)).collectLatest { response ->
+                        handleResponse(response, isNextPage = true, page = page)
+                    }
                 }
-            }
         }
 
         private fun handleResponse(

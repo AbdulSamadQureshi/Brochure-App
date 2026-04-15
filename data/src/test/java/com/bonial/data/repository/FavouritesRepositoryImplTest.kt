@@ -13,7 +13,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FavouritesRepositoryImplTest {
-
     private val dao: FavouritesDao = mock()
     private lateinit var repository: FavouritesRepositoryImpl
 
@@ -23,34 +22,38 @@ class FavouritesRepositoryImplTest {
     }
 
     @Test
-    fun `addFavourite inserts entity into DAO`() = runBlocking {
-        repository.addFavourite("https://example.com/cover.jpg")
-        verify(dao).insert(FavouriteBrochureEntity("https://example.com/cover.jpg"))
-    }
-
-    @Test
-    fun `removeFavourite deletes from DAO`() = runBlocking {
-        repository.removeFavourite("https://example.com/cover.jpg")
-        verify(dao).delete("https://example.com/cover.jpg")
-    }
-
-    @Test
-    fun `isFavouriteFlow emits true when DAO returns true`() = runBlocking {
-        whenever(dao.isFavouriteFlow("url")).thenReturn(flowOf(true))
-
-        repository.isFavouriteFlow("url").test {
-            assertThat(awaitItem()).isTrue()
-            awaitComplete()
+    fun `addFavourite inserts entity into DAO`() =
+        runBlocking {
+            repository.addFavourite("https://example.com/cover.jpg")
+            verify(dao).insert(FavouriteBrochureEntity("https://example.com/cover.jpg"))
         }
-    }
 
     @Test
-    fun `getFavouriteCoverUrls emits set of URLs from DAO`() = runBlocking {
-        whenever(dao.getAllCoverUrls()).thenReturn(flowOf(listOf("url1", "url2")))
-
-        repository.getFavouriteCoverUrls().test {
-            assertThat(awaitItem()).containsExactly("url1", "url2")
-            awaitComplete()
+    fun `removeFavourite deletes from DAO`() =
+        runBlocking {
+            repository.removeFavourite("https://example.com/cover.jpg")
+            verify(dao).delete("https://example.com/cover.jpg")
         }
-    }
+
+    @Test
+    fun `isFavouriteFlow emits true when DAO returns true`() =
+        runBlocking {
+            whenever(dao.isFavouriteFlow("url")).thenReturn(flowOf(true))
+
+            repository.isFavouriteFlow("url").test {
+                assertThat(awaitItem()).isTrue()
+                awaitComplete()
+            }
+        }
+
+    @Test
+    fun `getFavouriteCoverUrls emits set of URLs from DAO`() =
+        runBlocking {
+            whenever(dao.getAllCoverUrls()).thenReturn(flowOf(listOf("url1", "url2")))
+
+            repository.getFavouriteCoverUrls().test {
+                assertThat(awaitItem()).containsExactly("url1", "url2")
+                awaitComplete()
+            }
+        }
 }

@@ -34,32 +34,37 @@ class RetrofitClient(
     }
 
     private val okHttpClient: OkHttpClient by lazy {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (enableLogging) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
+        val loggingInterceptor =
+            HttpLoggingInterceptor().apply {
+                level =
+                    if (enableLogging) {
+                        HttpLoggingInterceptor.Level.BODY
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
             }
-        }
 
-        OkHttpClient.Builder()
+        OkHttpClient
+            .Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor { chain ->
                 val original = chain.request()
-                val requestBuilder = original.newBuilder()
-                    .header("Content-Type", "application/json")
-                    .header("Platform", "Android")
+                val requestBuilder =
+                    original
+                        .newBuilder()
+                        .header("Content-Type", "application/json")
+                        .header("Platform", "Android")
 
                 cachedAccessToken?.takeIf { it.isNotEmpty() }?.let { token ->
                     requestBuilder.header("Authorization", "Bearer $token")
                 }
                 chain.proceed(requestBuilder.build())
-            }
-            .build()
+            }.build()
     }
 
     val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
+        Retrofit
+            .Builder()
             .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(Gson()))

@@ -34,11 +34,15 @@ class CharactersViewModelTest {
 
     // ─── helpers ──────────────────────────────────────────────────────────────
 
-    private fun page(vararg characters: CharacterWithFavourite, totalPages: Int = 1) =
-        CharactersWithFavouritePage(characters = characters.toList(), totalPages = totalPages)
+    private fun page(
+        vararg characters: CharacterWithFavourite,
+        totalPages: Int = 1,
+    ) = CharactersWithFavouritePage(characters = characters.toList(), totalPages = totalPages)
 
-    private fun character(id: Int, name: String = "Char$id") =
-        CharacterWithFavourite(id, name, "Alive", "Human", "https://img/$id.png", false)
+    private fun character(
+        id: Int,
+        name: String = "Char$id",
+    ) = CharacterWithFavourite(id, name, "Alive", "Human", "https://img/$id.png", false)
 
     /**
      * Stubs both CharactersParams(1) and CharactersParams(1, "") to return [result].
@@ -49,264 +53,275 @@ class CharactersViewModelTest {
         whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(result)))
     }
 
-    private fun viewModel(): CharactersViewModel =
-        CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
+    private fun viewModel(): CharactersViewModel = CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
 
     // ─── initial load ─────────────────────────────────────────────────────────
 
     @Test
-    fun `initial load populates state and marks matching items as favourite`() = runTest {
-        val rick = CharacterWithFavourite(1, "Rick", "Alive", "Human", "https://img/rick.png", true)
-        val morty = CharacterWithFavourite(2, "Morty", "Alive", "Human", "https://img/morty.png", false)
-        stubInitialLoad(page(rick, morty, totalPages = 5))
+    fun `initial load populates state and marks matching items as favourite`() =
+        runTest {
+            val rick = CharacterWithFavourite(1, "Rick", "Alive", "Human", "https://img/rick.png", true)
+            val morty = CharacterWithFavourite(2, "Morty", "Alive", "Human", "https://img/morty.png", false)
+            stubInitialLoad(page(rick, morty, totalPages = 5))
 
-        viewModel().uiState.test {
-            var state = awaitItem()
-            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+            viewModel().uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
 
-            assertThat(state.characters.map(CharacterUi::name)).containsExactly("Rick", "Morty")
-            assertThat(state.characters.single { it.id == 1 }.isFavourite).isTrue()
-            assertThat(state.characters.single { it.id == 2 }.isFavourite).isFalse()
-            assertThat(state.totalPages).isEqualTo(5)
-            assertThat(state.currentPage).isEqualTo(1)
-            cancelAndIgnoreRemainingEvents()
+                assertThat(state.characters.map(CharacterUi::name)).containsExactly("Rick", "Morty")
+                assertThat(state.characters.single { it.id == 1 }.isFavourite).isTrue()
+                assertThat(state.characters.single { it.id == 2 }.isFavourite).isFalse()
+                assertThat(state.totalPages).isEqualTo(5)
+                assertThat(state.currentPage).isEqualTo(1)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `api error sets error state and emits ShowError effect`() = runTest {
-        val errorFlow = flowOf(Request.Error(ApiError("500", "Server exploded")))
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(errorFlow)
+    fun `api error sets error state and emits ShowError effect`() =
+        runTest {
+            val errorFlow = flowOf(Request.Error(ApiError("500", "Server exploded")))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(errorFlow)
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        vm.effect.test {
-            val effect = awaitItem() as CharactersEffect.ShowError
-            assertThat(effect.message).isEqualTo("Server exploded")
-            cancelAndIgnoreRemainingEvents()
+            vm.effect.test {
+                val effect = awaitItem() as CharactersEffect.ShowError
+                assertThat(effect.message).isEqualTo("Server exploded")
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertThat(vm.uiState.value.error).isEqualTo("Server exploded")
+            assertThat(vm.uiState.value.isLoading).isFalse()
         }
-        assertThat(vm.uiState.value.error).isEqualTo("Server exploded")
-        assertThat(vm.uiState.value.isLoading).isFalse()
-    }
 
     // ─── search / debounce ────────────────────────────────────────────────────
 
     @Test
-    fun `Search intent does NOT fire the API before 1 000 ms`() = runTest {
-        stubInitialLoad(page())
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
-            .thenReturn(flowOf(Request.Success(page(character(1, "Rick")))))
+    fun `Search intent does NOT fire the API before 1 000 ms`() =
+        runTest {
+            stubInitialLoad(page())
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
+                .thenReturn(flowOf(Request.Success(page(character(1, "Rick")))))
 
-        val vm = viewModel()
-        vm.sendIntent(CharactersIntent.Search("Rick"))
-        advanceTimeBy(999) // Just under the debounce threshold — must NOT have fired yet.
+            val vm = viewModel()
+            vm.sendIntent(CharactersIntent.Search("Rick"))
+            advanceTimeBy(999) // Just under the debounce threshold — must NOT have fired yet.
 
-        verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(1, "Rick"))
-    }
+            verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(1, "Rick"))
+        }
 
     @Test
-    fun `Search intent fires the API after 1 000 ms debounce`() = runTest {
-        stubInitialLoad(page())
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
-            .thenReturn(flowOf(Request.Success(page(character(1, "Rick Sanchez")))))
+    fun `Search intent fires the API after 1 000 ms debounce`() =
+        runTest {
+            stubInitialLoad(page())
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
+                .thenReturn(flowOf(Request.Success(page(character(1, "Rick Sanchez")))))
 
-        val vm = viewModel()
-        vm.sendIntent(CharactersIntent.Search("Rick"))
-        advanceTimeBy(1_001)
+            val vm = viewModel()
+            vm.sendIntent(CharactersIntent.Search("Rick"))
+            advanceTimeBy(1_001)
 
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.searchQuery != "Rick" || state.isLoading) state = awaitItem()
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.searchQuery != "Rick" || state.isLoading) state = awaitItem()
 
-            assertThat(state.searchQuery).isEqualTo("Rick")
-            assertThat(state.characters.map(CharacterUi::name)).containsExactly("Rick Sanchez")
-            cancelAndIgnoreRemainingEvents()
+                assertThat(state.searchQuery).isEqualTo("Rick")
+                assertThat(state.characters.map(CharacterUi::name)).containsExactly("Rick Sanchez")
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `Search with empty query fires immediately without debounce`() = runTest {
-        val fullPage = page(character(1, "Rick"), character(2, "Morty"))
-        stubInitialLoad(fullPage)
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
-            .thenReturn(flowOf(Request.Success(page(character(1, "Rick")))))
+    fun `Search with empty query fires immediately without debounce`() =
+        runTest {
+            val fullPage = page(character(1, "Rick"), character(2, "Morty"))
+            stubInitialLoad(fullPage)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
+                .thenReturn(flowOf(Request.Success(page(character(1, "Rick")))))
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        // Wait for initial load.
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
-            cancelAndIgnoreRemainingEvents()
+            // Wait for initial load.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Apply search and wait for debounce.
+            vm.sendIntent(CharactersIntent.Search("Rick"))
+            advanceTimeBy(1_001)
+
+            // Clear search — should fire immediately (0 ms debounce).
+            vm.sendIntent(CharactersIntent.Search(""))
+            advanceTimeBy(1) // tiny tick to let the coroutine run
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.searchQuery.isNotEmpty() || state.isLoading) state = awaitItem()
+
+                assertThat(state.searchQuery).isEmpty()
+                assertThat(state.characters).hasSize(2)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        // Apply search and wait for debounce.
-        vm.sendIntent(CharactersIntent.Search("Rick"))
-        advanceTimeBy(1_001)
-
-        // Clear search — should fire immediately (0 ms debounce).
-        vm.sendIntent(CharactersIntent.Search(""))
-        advanceTimeBy(1) // tiny tick to let the coroutine run
-
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.searchQuery.isNotEmpty() || state.isLoading) state = awaitItem()
-
-            assertThat(state.searchQuery).isEmpty()
-            assertThat(state.characters).hasSize(2)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     // ─── retry ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `LoadCharacters retry fires immediately without debounce`() = runTest {
-        val errorFlow = flowOf(Request.Error(ApiError("500", "oops")))
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(errorFlow)
+    fun `LoadCharacters retry fires immediately without debounce`() =
+        runTest {
+            val errorFlow = flowOf(Request.Error(ApiError("500", "oops")))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(errorFlow)
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        // Let the initial (failing) load settle.
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.isLoading || state.isInitialLoading) state = awaitItem()
-            cancelAndIgnoreRemainingEvents()
+            // Let the initial (failing) load settle.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.isLoading || state.isInitialLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Stub a successful retry response.
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "")))
+                .thenReturn(flowOf(Request.Success(page(character(1)))))
+
+            vm.sendIntent(CharactersIntent.LoadCharacters)
+            advanceTimeBy(1) // Should fire with 0 ms delay (gen > 0).
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+
+                assertThat(state.characters).hasSize(1)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        // Stub a successful retry response.
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, "")))
-            .thenReturn(flowOf(Request.Success(page(character(1)))))
-
-        vm.sendIntent(CharactersIntent.LoadCharacters)
-        advanceTimeBy(1) // Should fire with 0 ms delay (gen > 0).
-
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
-
-            assertThat(state.characters).hasSize(1)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     // ─── pagination ───────────────────────────────────────────────────────────
 
     @Test
-    fun `LoadNextPage appends characters from the next page`() = runTest {
-        val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 2)
-        stubInitialLoad(firstPage)
-        whenever(getEnrichedCharactersUseCase(CharactersParams(2, "")))
-            .thenReturn(flowOf(Request.Success(page(character(3, "Summer"), totalPages = 2))))
+    fun `LoadNextPage appends characters from the next page`() =
+        runTest {
+            val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 2)
+            stubInitialLoad(firstPage)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(2, "")))
+                .thenReturn(flowOf(Request.Success(page(character(3, "Summer"), totalPages = 2))))
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        // Wait for page 1.
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
-            cancelAndIgnoreRemainingEvents()
+            // Wait for page 1.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            vm.sendIntent(CharactersIntent.LoadNextPage)
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.size < 3 || state.isLoadingNextPage) state = awaitItem()
+
+                assertThat(state.characters.map(CharacterUi::name))
+                    .containsExactly("Rick", "Morty", "Summer")
+                    .inOrder()
+                assertThat(state.currentPage).isEqualTo(2)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        vm.sendIntent(CharactersIntent.LoadNextPage)
-
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.characters.size < 3 || state.isLoadingNextPage) state = awaitItem()
-
-            assertThat(state.characters.map(CharacterUi::name))
-                .containsExactly("Rick", "Morty", "Summer").inOrder()
-            assertThat(state.currentPage).isEqualTo(2)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     @Test
-    fun `LoadNextPage is ignored when already on the last page`() = runTest {
-        stubInitialLoad(page(totalPages = 1))
+    fun `LoadNextPage is ignored when already on the last page`() =
+        runTest {
+            stubInitialLoad(page(totalPages = 1))
 
-        val vm = viewModel()
-        vm.sendIntent(CharactersIntent.LoadNextPage)
+            val vm = viewModel()
+            vm.sendIntent(CharactersIntent.LoadNextPage)
 
-        verify(getEnrichedCharactersUseCase, atLeastOnce()).invoke(CharactersParams(1, ""))
-        // Page 2 must never be requested.
-        verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(2, ""))
-    }
+            verify(getEnrichedCharactersUseCase, atLeastOnce()).invoke(CharactersParams(1, ""))
+            // Page 2 must never be requested.
+            verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(2, ""))
+        }
 
     @Test
-    fun `LoadNextPage is ignored while an initial load is still in flight`() = runTest {
-        // Emit Loading but never Success so isLoading stays true.
-        val neverCompletes = flow<Request<CharactersWithFavouritePage>> { emit(Request.Loading) }
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(neverCompletes)
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(neverCompletes)
+    fun `LoadNextPage is ignored while an initial load is still in flight`() =
+        runTest {
+            // Emit Loading but never Success so isLoading stays true.
+            val neverCompletes = flow<Request<CharactersWithFavouritePage>> { emit(Request.Loading) }
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(neverCompletes)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(neverCompletes)
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        // Confirm loading state.
-        vm.uiState.test {
-            var state = awaitItem()
-            while (!state.isLoading) state = awaitItem()
-            cancelAndIgnoreRemainingEvents()
+            // Confirm loading state.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (!state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            vm.sendIntent(CharactersIntent.LoadNextPage)
+
+            verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(2, ""))
         }
-
-        vm.sendIntent(CharactersIntent.LoadNextPage)
-
-        verify(getEnrichedCharactersUseCase, never()).invoke(CharactersParams(2, ""))
-    }
 
     @Test
-    fun `Search cancels in-flight pagination so stale results do not arrive`() = runTest {
-        val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 3)
-        stubInitialLoad(firstPage)
+    fun `Search cancels in-flight pagination so stale results do not arrive`() =
+        runTest {
+            val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 3)
+            stubInitialLoad(firstPage)
 
-        // Page 2 returns a slow flow that never completes.
-        val slowPage2 = flow<Request<CharactersWithFavouritePage>> { emit(Request.Loading) }
-        whenever(getEnrichedCharactersUseCase(CharactersParams(2, ""))).thenReturn(slowPage2)
+            // Page 2 returns a slow flow that never completes.
+            val slowPage2 = flow<Request<CharactersWithFavouritePage>> { emit(Request.Loading) }
+            whenever(getEnrichedCharactersUseCase(CharactersParams(2, ""))).thenReturn(slowPage2)
 
-        val searchPage = page(character(10, "Summer"))
-        whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Summer")))
-            .thenReturn(flowOf(Request.Success(searchPage)))
+            val searchPage = page(character(10, "Summer"))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Summer")))
+                .thenReturn(flowOf(Request.Success(searchPage)))
 
-        val vm = viewModel()
+            val vm = viewModel()
 
-        // Wait for initial load.
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
-            cancelAndIgnoreRemainingEvents()
+            // Wait for initial load.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Kick off pagination (will hang on Loading).
+            vm.sendIntent(CharactersIntent.LoadNextPage)
+
+            // Immediately search — must cancel the pagination job.
+            vm.sendIntent(CharactersIntent.Search("Summer"))
+            advanceTimeBy(1_001)
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.searchQuery != "Summer" || state.isLoading || state.isLoadingNextPage) state = awaitItem()
+
+                // Only the search result must be present; page-2 characters must not appear.
+                assertThat(state.characters.map(CharacterUi::name)).containsExactly("Summer")
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        // Kick off pagination (will hang on Loading).
-        vm.sendIntent(CharactersIntent.LoadNextPage)
-
-        // Immediately search — must cancel the pagination job.
-        vm.sendIntent(CharactersIntent.Search("Summer"))
-        advanceTimeBy(1_001)
-
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.searchQuery != "Summer" || state.isLoading || state.isLoadingNextPage) state = awaitItem()
-
-            // Only the search result must be present; page-2 characters must not appear.
-            assertThat(state.characters.map(CharacterUi::name)).containsExactly("Summer")
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     // ─── favourites ───────────────────────────────────────────────────────────
 
     @Test
-    fun `ToggleFavourite ignores characters without an imageUrl`() = runTest {
-        stubInitialLoad(page())
+    fun `ToggleFavourite ignores characters without an imageUrl`() =
+        runTest {
+            stubInitialLoad(page())
 
-        val vm = viewModel()
-        vm.sendIntent(
-            CharactersIntent.ToggleFavourite(
-                CharacterUi(id = 99, name = null, status = null, species = null, imageUrl = null, isFavourite = false),
-            ),
-        )
-        verify(toggleFavourite, never()).invoke(org.mockito.kotlin.any(), org.mockito.kotlin.any())
-    }
+            val vm = viewModel()
+            vm.sendIntent(
+                CharactersIntent.ToggleFavourite(
+                    CharacterUi(id = 99, name = null, status = null, species = null, imageUrl = null, isFavourite = false),
+                ),
+            )
+            verify(toggleFavourite, never()).invoke(org.mockito.kotlin.any(), org.mockito.kotlin.any())
+        }
 }

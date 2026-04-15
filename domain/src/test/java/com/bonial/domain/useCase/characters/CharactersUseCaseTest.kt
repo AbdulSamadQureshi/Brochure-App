@@ -14,36 +14,47 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class CharactersUseCaseTest {
-
     private val repository: CharactersRepository = mock()
     private val useCase = CharactersUseCase(repository)
 
     @Test
-    fun `invoke forwards page parameter to repository`(): Unit = runBlocking {
-        val page = CharactersPage(
-            characters = listOf(Character(1, "Rick", null, null, null)),
-            totalPages = 1,
-        )
-        whenever(repository.characters(3, null)).thenReturn(flowOf(Request.Success(page)))
+    fun `invoke forwards page parameter to repository`(): Unit =
+        runBlocking {
+            val page =
+                CharactersPage(
+                    characters = listOf(Character(1, "Rick", null, null, null)),
+                    totalPages = 1,
+                )
+            whenever(repository.characters(3, null)).thenReturn(flowOf(Request.Success(page)))
 
-        useCase(CharactersParams(3)).test {
-            val success = awaitItem() as Request.Success
-            assertThat(success.data.characters.first().name).isEqualTo("Rick")
-            awaitComplete()
+            useCase(CharactersParams(3)).test {
+                val success = awaitItem() as Request.Success
+                assertThat(
+                    success.data.characters
+                        .first()
+                        .name,
+                ).isEqualTo("Rick")
+                awaitComplete()
+            }
+            verify(repository).characters(3, null)
         }
-        verify(repository).characters(3, null)
-    }
 
     @Test
-    fun `invoke surfaces repository error to caller`(): Unit = runBlocking {
-        whenever(repository.characters(1, null)).thenReturn(
-            flowOf(Request.Error(com.bonial.domain.model.network.response.ApiError("NetworkError", "No connection."))),
-        )
+    fun `invoke surfaces repository error to caller`(): Unit =
+        runBlocking {
+            whenever(repository.characters(1, null)).thenReturn(
+                flowOf(
+                    Request.Error(
+                        com.bonial.domain.model.network.response
+                            .ApiError("NetworkError", "No connection."),
+                    ),
+                ),
+            )
 
-        useCase(CharactersParams(1)).test {
-            val error = awaitItem() as Request.Error
-            assertThat(error.apiError?.code).isEqualTo("NetworkError")
-            awaitComplete()
+            useCase(CharactersParams(1)).test {
+                val error = awaitItem() as Request.Error
+                assertThat(error.apiError?.code).isEqualTo("NetworkError")
+                awaitComplete()
+            }
         }
-    }
 }

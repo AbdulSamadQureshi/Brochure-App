@@ -13,7 +13,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class SharedPrefsManagerTest {
-
     private lateinit var sharedPrefsManager: SharedPrefsManager
     private val mockContext: Context = mock()
     private val mockSharedPreferences: SharedPreferences = mock()
@@ -76,5 +75,8 @@ class SharedPrefsManagerTest {
         verify(mockEditor).commit()
     }
 
-    private data class TestData(val name: String, val age: Int)
+    private data class TestData(
+        val name: String,
+        val age: Int,
+    )
 }

@@ -6,7 +6,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class MapSuccessTest {
-
     @Test
     fun `transforms Success payload`() {
         val result = Request.Success(42).mapSuccess { it * 2 }

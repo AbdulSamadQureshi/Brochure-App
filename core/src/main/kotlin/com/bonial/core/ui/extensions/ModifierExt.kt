@@ -18,29 +18,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
 
-fun Modifier.shimmerEffect(): Modifier = composed {
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val startOffsetX by transition.animateFloat(
-        initialValue = -2 * size.width.toFloat(),
-        targetValue = 2 * size.width.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing)
-        ),
-        label = "shimmer"
-    )
-
-    background(
-        brush = Brush.linearGradient(
-            colors = listOf(
-                Color(0xFFEBEBEB),
-                Color(0xFFD6D6D6),
-                Color(0xFFEBEBEB),
-            ),
-            start = Offset(startOffsetX, 0f),
-            end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat())
+fun Modifier.shimmerEffect(): Modifier =
+    composed {
+        var size by remember { mutableStateOf(IntSize.Zero) }
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val startOffsetX by transition.animateFloat(
+            initialValue = -2 * size.width.toFloat(),
+            targetValue = 2 * size.width.toFloat(),
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(1200, easing = LinearEasing),
+                ),
+            label = "shimmer",
         )
-    ).onGloballyPositioned {
-        size = it.size
+
+        background(
+            brush =
+                Brush.linearGradient(
+                    colors =
+                        listOf(
+                            Color(0xFFEBEBEB),
+                            Color(0xFFD6D6D6),
+                            Color(0xFFEBEBEB),
+                        ),
+                    start = Offset(startOffsetX, 0f),
+                    end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat()),
+                ),
+        ).onGloballyPositioned {
+            size = it.size
+        }
     }
-}

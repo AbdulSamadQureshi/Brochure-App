@@ -17,15 +17,15 @@ import kotlinx.coroutines.launch
  * [E] represents the Side Effect (one-time events).
  */
 abstract class MviViewModel<S, I, E> : ViewModel() {
-
     private val initialState: S by lazy { createInitialState() }
+
     abstract fun createInitialState(): S
 
     private val _uiState = MutableStateFlow(initialState)
     val uiState: StateFlow<S> = _uiState.asStateFlow()
 
-    private val _intent = Channel<I>(Channel.BUFFERED)
-    private val intent = _intent.receiveAsFlow()
+    private val _intentFlow = Channel<I>(Channel.BUFFERED)
+    val intentFlow = _intentFlow.receiveAsFlow()
 
     private val _effect = Channel<E>(Channel.CONFLATED)
     val effect = _effect.receiveAsFlow()
@@ -36,7 +36,7 @@ abstract class MviViewModel<S, I, E> : ViewModel() {
 
     private fun subscribeIntents() {
         viewModelScope.launch {
-            intent.collect {
+            intentFlow.collect {
                 handleIntent(it)
             }
         }
@@ -44,7 +44,7 @@ abstract class MviViewModel<S, I, E> : ViewModel() {
 
     fun sendIntent(intent: I) {
         viewModelScope.launch {
-            _intent.send(intent)
+            _intentFlow.send(intent)
         }
     }
 

@@ -3,9 +3,9 @@ package com.bonial.network
 import com.bonial.core.preferences.UserPreferencesDataStore
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.flowOf
+import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.logging.HttpLoggingInterceptor
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -14,7 +14,6 @@ import org.mockito.kotlin.whenever
 import retrofit2.http.GET
 
 class RetrofitClientTest {
-
     private val mockWebServer = MockWebServer()
     private val dataStore: UserPreferencesDataStore = mock()
 
@@ -40,11 +39,12 @@ class RetrofitClientTest {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf("test-token-123"))
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = false,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = false,
+                userPreferencesDataStore = dataStore,
+            )
         val service = client.retrofit.create(PingService::class.java)
 
         // Fire the request — we don't care about the response body, only the headers.
@@ -59,11 +59,12 @@ class RetrofitClientTest {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf(null))
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = false,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = false,
+                userPreferencesDataStore = dataStore,
+            )
         val service = client.retrofit.create(PingService::class.java)
 
         runCatching { kotlinx.coroutines.runBlocking { service.ping() } }
@@ -77,11 +78,12 @@ class RetrofitClientTest {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf(""))
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = false,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = false,
+                userPreferencesDataStore = dataStore,
+            )
         val service = client.retrofit.create(PingService::class.java)
 
         runCatching { kotlinx.coroutines.runBlocking { service.ping() } }
@@ -95,11 +97,12 @@ class RetrofitClientTest {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf(null))
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = false,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = false,
+                userPreferencesDataStore = dataStore,
+            )
         val service = client.retrofit.create(PingService::class.java)
 
         runCatching { kotlinx.coroutines.runBlocking { service.ping() } }
@@ -113,18 +116,21 @@ class RetrofitClientTest {
     fun `logging interceptor is set to BODY when enableLogging is true`() {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf(null))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = true,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = true,
+                userPreferencesDataStore = dataStore,
+            )
 
         // Reach into the OkHttpClient interceptors and verify the logging level.
-        val loggingInterceptor = client.retrofit.callFactory()
-            .let { it as okhttp3.OkHttpClient }
-            .interceptors
-            .filterIsInstance<HttpLoggingInterceptor>()
-            .firstOrNull()
+        val loggingInterceptor =
+            client.retrofit
+                .callFactory()
+                .let { it as okhttp3.OkHttpClient }
+                .interceptors
+                .filterIsInstance<HttpLoggingInterceptor>()
+                .firstOrNull()
 
         assertThat(loggingInterceptor).isNotNull()
         assertThat(loggingInterceptor!!.level).isEqualTo(HttpLoggingInterceptor.Level.BODY)
@@ -134,17 +140,20 @@ class RetrofitClientTest {
     fun `logging interceptor is set to NONE when enableLogging is false`() {
         whenever(dataStore.accessTokenFlow).thenReturn(flowOf(null))
 
-        val client = RetrofitClient(
-            baseUrl = mockWebServer.url("/").toString(),
-            enableLogging = false,
-            userPreferencesDataStore = dataStore,
-        )
+        val client =
+            RetrofitClient(
+                baseUrl = mockWebServer.url("/").toString(),
+                enableLogging = false,
+                userPreferencesDataStore = dataStore,
+            )
 
-        val loggingInterceptor = client.retrofit.callFactory()
-            .let { it as okhttp3.OkHttpClient }
-            .interceptors
-            .filterIsInstance<HttpLoggingInterceptor>()
-            .firstOrNull()
+        val loggingInterceptor =
+            client.retrofit
+                .callFactory()
+                .let { it as okhttp3.OkHttpClient }
+                .interceptors
+                .filterIsInstance<HttpLoggingInterceptor>()
+                .firstOrNull()
 
         assertThat(loggingInterceptor).isNotNull()
         assertThat(loggingInterceptor!!.level).isEqualTo(HttpLoggingInterceptor.Level.NONE)

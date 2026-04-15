@@ -127,18 +127,19 @@ class CharacterDetailViewModel
          */
         private fun shareCharacter() {
             val character = uiState.value.character ?: return
-            
+
             viewModelScope.launch {
-                val detail = com.bonial.domain.model.CharacterDetail(
-                    id = character.id,
-                    name = character.name,
-                    status = character.status,
-                    species = character.species,
-                    gender = character.gender,
-                    origin = character.origin,
-                    location = character.location,
-                    imageUrl = character.imageUrl
-                )
+                val detail =
+                    com.bonial.domain.model.CharacterDetail(
+                        id = character.id,
+                        name = character.name,
+                        status = character.status,
+                        species = character.species,
+                        gender = character.gender,
+                        origin = character.origin,
+                        location = character.location,
+                        imageUrl = character.imageUrl,
+                    )
                 val shareText = getCharacterShareTextUseCase(detail)
                 setEffect { CharacterDetailEffect.Share(shareText) }
             }

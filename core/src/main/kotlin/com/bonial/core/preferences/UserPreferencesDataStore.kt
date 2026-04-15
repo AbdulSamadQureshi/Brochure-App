@@ -20,30 +20,32 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * Provides type-safe, coroutine-based async preference access — a modern replacement for SharedPreferences.
  */
 @Singleton
-class UserPreferencesDataStore @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-) {
-    private val dataStore = context.dataStore
+class UserPreferencesDataStore
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) {
+        private val dataStore = context.dataStore
 
-    val accessTokenFlow: Flow<String?> = dataStore.data.map { it[Keys.ACCESS_TOKEN] }
-    val refreshTokenFlow: Flow<String?> = dataStore.data.map { it[Keys.REFRESH_TOKEN] }
+        val accessTokenFlow: Flow<String?> = dataStore.data.map { it[Keys.ACCESS_TOKEN] }
+        val refreshTokenFlow: Flow<String?> = dataStore.data.map { it[Keys.REFRESH_TOKEN] }
 
-    suspend fun getAccessToken(): String? = dataStore.data.first()[Keys.ACCESS_TOKEN]
+        suspend fun getAccessToken(): String? = dataStore.data.first()[Keys.ACCESS_TOKEN]
 
-    suspend fun setAccessToken(token: String) {
-        dataStore.edit { it[Keys.ACCESS_TOKEN] = token }
+        suspend fun setAccessToken(token: String) {
+            dataStore.edit { it[Keys.ACCESS_TOKEN] = token }
+        }
+
+        suspend fun setRefreshToken(token: String) {
+            dataStore.edit { it[Keys.REFRESH_TOKEN] = token }
+        }
+
+        suspend fun clearAll() {
+            dataStore.edit { it.clear() }
+        }
+
+        private object Keys {
+            val ACCESS_TOKEN = stringPreferencesKey(PreferenceKeys.KEY_ACCESS_TOKEN)
+            val REFRESH_TOKEN = stringPreferencesKey(PreferenceKeys.KEY_REFRESH_TOKEN)
+        }
     }
-
-    suspend fun setRefreshToken(token: String) {
-        dataStore.edit { it[Keys.REFRESH_TOKEN] = token }
-    }
-
-    suspend fun clearAll() {
-        dataStore.edit { it.clear() }
-    }
-
-    private object Keys {
-        val ACCESS_TOKEN = stringPreferencesKey(PreferenceKeys.KEY_ACCESS_TOKEN)
-        val REFRESH_TOKEN = stringPreferencesKey(PreferenceKeys.KEY_REFRESH_TOKEN)
-    }
-}

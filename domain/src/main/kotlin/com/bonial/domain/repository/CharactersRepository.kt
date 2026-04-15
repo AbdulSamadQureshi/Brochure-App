@@ -18,6 +18,10 @@ data class CharactersPage(
  * detail of the data layer; consumers (use cases, ViewModels) never see transport types.
  */
 interface CharactersRepository {
-    fun characters(page: Int, name: String? = null): Flow<Request<CharactersPage>>
+    fun characters(
+        page: Int,
+        name: String? = null,
+    ): Flow<Request<CharactersPage>>
+
     fun character(id: Int): Flow<Request<CharacterDetail>>
 }

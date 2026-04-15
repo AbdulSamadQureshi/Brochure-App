@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FavouritesDao {
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(entity: FavouriteBrochureEntity)
 

@@ -28,11 +28,10 @@ suspend fun <T> withRetry(
     error("withRetry: unreachable after $maxAttempts attempts")
 }
 
-fun Throwable.isRateLimitError(): Boolean =
-    this is HttpException && code() == 429
+fun Throwable.isRateLimitError(): Boolean = this is HttpException && code() == 429
 
-inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<Request<T>> {
-    return flow {
+inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<Request<T>> =
+    flow {
         emit(Request.Loading)
         try {
             val result = withRetry { apiCall() }
@@ -41,30 +40,33 @@ inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<R
             emit(Request.Error(manageThrowable(throwable)))
         }
     }.flowOn(Dispatchers.IO)
-}
 
-fun manageThrowable(throwable: Throwable): ApiError = when (throwable) {
-    is IOException -> ApiError(
-        code = "NetworkError",
-        message = "Check your internet connection and try again.",
-    )
-    is HttpException -> {
-        val httpCode = throwable.response()?.code() ?: 0
-        ApiError(code = httpCode.toString(), message = httpCode.toUserMessage())
+fun manageThrowable(throwable: Throwable): ApiError =
+    when (throwable) {
+        is IOException ->
+            ApiError(
+                code = "NetworkError",
+                message = "Check your internet connection and try again.",
+            )
+        is HttpException -> {
+            val httpCode = throwable.response()?.code() ?: 0
+            ApiError(code = httpCode.toString(), message = httpCode.toUserMessage())
+        }
+        else ->
+            ApiError(
+                code = "Unknown",
+                message = throwable.message ?: "An unexpected error occurred.",
+            )
     }
-    else -> ApiError(
-        code = "Unknown",
-        message = throwable.message ?: "An unexpected error occurred.",
-    )
-}
 
-private fun Int.toUserMessage(): String = when (this) {
-    400 -> "The request was invalid. Please try again."
-    401 -> "Your session has expired. Please sign in again."
-    403 -> "You do not have permission to access this resource."
-    404 -> "The requested resource was not found."
-    408 -> "The request timed out. Please try again."
-    429 -> "Too many requests. Please wait a moment and retry."
-    in 500..599 -> "The server is having trouble right now. Please try again later."
-    else -> "Something went wrong. Please try again."
-}
+private fun Int.toUserMessage(): String =
+    when (this) {
+        400 -> "The request was invalid. Please try again."
+        401 -> "Your session has expired. Please sign in again."
+        403 -> "You do not have permission to access this resource."
+        404 -> "The requested resource was not found."
+        408 -> "The request timed out. Please try again."
+        429 -> "Too many requests. Please wait a moment and retry."
+        in 500..599 -> "The server is having trouble right now. Please try again later."
+        else -> "Something went wrong. Please try again."
+    }
