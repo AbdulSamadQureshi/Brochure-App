@@ -93,7 +93,7 @@ class CharactersRepositoryImplTest {
 
     @Test
     fun `characters emits Error when api throws IOException`() = runBlocking {
-        apiService.stub { onBlocking { characters(1) } doAnswer { throw IOException("offline") } }
+        apiService.stub { on { characters(1) } doAnswer { throw IOException("offline") } }
 
         repository.characters(page = 1).test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
@@ -122,7 +122,7 @@ class CharactersRepositoryImplTest {
     @Test
     fun `character emits Error with http code when api throws HttpException`() = runBlocking {
         val httpResponse = Response.error<CharacterDto>(404, "".toResponseBody())
-        apiService.stub { onBlocking { character(99) } doAnswer { throw HttpException(httpResponse) } }
+        apiService.stub { on { character(99) } doAnswer { throw HttpException(httpResponse) } }
 
         repository.character(id = 99).test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
