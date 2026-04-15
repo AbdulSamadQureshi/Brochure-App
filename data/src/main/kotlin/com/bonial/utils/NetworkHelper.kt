@@ -3,6 +3,7 @@ package com.bonial.utils
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -10,16 +11,54 @@ import retrofit2.HttpException
 import java.io.IOException
 
 /**
- * A safeApiCall wrapper for Retrofit that converts suspend functions into a Flow emitting Request states.
- * It automatically emits loading, success, and error states.
+ * Retries [block] up to [maxAttempts] times when the call throws a retryable
+ * exception (HTTP 429 Too Many Requests by default), waiting [retryDelayMs]
+ * milliseconds between every attempt.
  *
- * @param apiCall The Retrofit API call to be executed (e.g., apiService.getUser(id)).
+ * The delay is **fixed** — every retry waits the same amount — so the caller
+ * backs off at a steady, predictable rate instead of an exponential ramp.
+ *
+ * [delayProvider] is injectable so unit tests can pass a no-op and avoid
+ * real wall-clock delays.
+ */
+suspend fun <T> withRetry(
+    maxAttempts: Int = 5,
+    retryDelayMs: Long = 1_000L,
+    delayProvider: suspend (Long) -> Unit = { ms -> delay(ms) },
+    isRetryable: (Throwable) -> Boolean = Throwable::isRateLimitError,
+    block: suspend () -> T,
+): T {
+    for (attempt in 1..maxAttempts) {
+        try {
+            return block()
+        } catch (t: Throwable) {
+            if (!isRetryable(t) || attempt == maxAttempts) throw t
+            delayProvider(retryDelayMs)
+        }
+    }
+    error("withRetry: unreachable after $maxAttempts attempts")
+}
+
+/**
+ * Returns true only for HTTP 429 (Too Many Requests).
+ * All other errors — including 5xx server errors and network failures — are
+ * surfaced immediately without retrying.
+ */
+fun Throwable.isRateLimitError(): Boolean =
+    this is HttpException && code() == 429
+
+/**
+ * Wraps a Retrofit suspend call in a Flow that emits Loading → Success | Error.
+ *
+ * HTTP 429 responses are retried automatically via [withRetry] (fixed 1-second
+ * delay between attempts, up to 5 retries). Every other failure is emitted as
+ * [Request.Error] on the first attempt.
  */
 inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<Request<T>> {
     return flow {
+        emit(Request.Loading)
         try {
-            emit(Request.Loading)
-            val result = apiCall()
+            val result = withRetry { apiCall() }
             emit(Request.Success(result))
         } catch (throwable: Throwable) {
             emit(Request.Error(manageThrowable(throwable)))
@@ -29,8 +68,7 @@ inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<R
 
 /**
  * Parses a Throwable to a user-friendly ApiError. HTTP codes are mapped to messages
- * that are safe to surface in the UI — raw Retrofit messages often leak URLs or
- * framework-internal text that does not help the user.
+ * that are safe to surface in the UI.
  */
 fun manageThrowable(throwable: Throwable): ApiError = when (throwable) {
     is IOException -> ApiError(

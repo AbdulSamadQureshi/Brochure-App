@@ -20,7 +20,7 @@ import retrofit2.Response
 import java.io.IOException
 
 /**
- * Covers the behavior that makes the repository more than a type alias:
+ * Covers the behaviour that makes the repository more than a type alias:
  *  - DTO → domain mapping is applied on Success
  *  - Loading/Error states survive the mapping step (via `mapSuccess`)
  *  - Transport failures are surfaced as `Request.Error` rather than thrown

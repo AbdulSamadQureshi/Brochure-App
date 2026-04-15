@@ -12,33 +12,23 @@ import java.io.IOException
 
 class NetworkHelperTest {
 
+    // ----------------------------------------------------------------
+    // safeApiCall
+    // ----------------------------------------------------------------
+
     @Test
     fun `safeApiCall should emit Loading then Success when api call is successful`() = runBlocking {
-        // Given
-        val expectedData = "Success Data"
-        val apiCall: suspend () -> String = { expectedData }
-
-        // When
-        val flow = safeApiCall { apiCall() }
-
-        // Then
+        val flow = safeApiCall { "Success Data" }
         flow.test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
-            val success = awaitItem() as Request.Success
-            assertThat(success.data).isEqualTo(expectedData)
+            assertThat((awaitItem() as Request.Success).data).isEqualTo("Success Data")
             awaitComplete()
         }
     }
 
     @Test
     fun `safeApiCall should emit Loading then Error when api call throws IOException`() = runBlocking {
-        // Given
-        val apiCall: suspend () -> String = { throw IOException("No Internet") }
-
-        // When
-        val flow = safeApiCall { apiCall() }
-
-        // Then
+        val flow = safeApiCall<String> { throw IOException("No Internet") }
         flow.test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
             val error = awaitItem() as Request.Error
@@ -50,31 +40,18 @@ class NetworkHelperTest {
 
     @Test
     fun `safeApiCall should emit Loading then Error when api call throws HttpException`() = runBlocking {
-        // Given
         val response = Response.error<String>(404, "".toResponseBody())
-        val apiCall: suspend () -> String = { throw HttpException(response) }
-
-        // When
-        val flow = safeApiCall { apiCall() }
-
-        // Then
+        val flow = safeApiCall<String> { throw HttpException(response) }
         flow.test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
-            val error = awaitItem() as Request.Error
-            assertThat(error.apiError?.code).isEqualTo("404")
+            assertThat((awaitItem() as Request.Error).apiError?.code).isEqualTo("404")
             awaitComplete()
         }
     }
 
     @Test
     fun `safeApiCall should emit Loading then Error when api call throws unknown Exception`() = runBlocking {
-        // Given
-        val apiCall: suspend () -> String = { throw RuntimeException("Unknown error") }
-
-        // When
-        val flow = safeApiCall { apiCall() }
-
-        // Then
+        val flow = safeApiCall<String> { throw RuntimeException("Unknown error") }
         flow.test {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
             val error = awaitItem() as Request.Error
@@ -86,8 +63,7 @@ class NetworkHelperTest {
 
     @Test
     fun `HttpException maps 401 to session expired message`() = runBlocking {
-        val response = Response.error<String>(401, "".toResponseBody())
-        val flow = safeApiCall<String> { throw HttpException(response) }
+        val flow = safeApiCall<String> { throw HttpException(Response.error<String>(401, "".toResponseBody())) }
         flow.test {
             awaitItem() // Loading
             val error = awaitItem() as Request.Error
@@ -99,8 +75,7 @@ class NetworkHelperTest {
 
     @Test
     fun `HttpException maps 500 to generic server message`() = runBlocking {
-        val response = Response.error<String>(500, "".toResponseBody())
-        val flow = safeApiCall<String> { throw HttpException(response) }
+        val flow = safeApiCall<String> { throw HttpException(Response.error<String>(500, "".toResponseBody())) }
         flow.test {
             awaitItem() // Loading
             val error = awaitItem() as Request.Error
@@ -109,5 +84,100 @@ class NetworkHelperTest {
                 .isEqualTo("The server is having trouble right now. Please try again later.")
             awaitComplete()
         }
+    }
+
+    // ----------------------------------------------------------------
+    // withRetry — all tests use a no-op delayProvider so they are fast
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `withRetry succeeds on the first attempt without retrying`() = runBlocking {
+        var callCount = 0
+        val result = withRetry(delayProvider = {}) { callCount++; "ok" }
+        assertThat(result).isEqualTo("ok")
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `withRetry retries on 429 and returns success when a later attempt succeeds`() = runBlocking {
+        val r429 = Response.error<String>(429, "".toResponseBody())
+        var callCount = 0
+        val result = withRetry(maxAttempts = 3, delayProvider = {}) {
+            callCount++
+            if (callCount < 3) throw HttpException(r429)
+            "recovered"
+        }
+        assertThat(result).isEqualTo("recovered")
+        assertThat(callCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `withRetry exhausts all attempts on persistent 429 and rethrows`() = runBlocking {
+        val r429 = Response.error<String>(429, "".toResponseBody())
+        var callCount = 0
+        var caught: Throwable? = null
+        try {
+            withRetry(maxAttempts = 3, delayProvider = {}) {
+                callCount++
+                throw HttpException(r429)
+            }
+        } catch (t: Throwable) { caught = t }
+
+        assertThat(caught).isInstanceOf(HttpException::class.java)
+        assertThat((caught as HttpException).code()).isEqualTo(429)
+        assertThat(callCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `withRetry does not retry on 404 — fails on the first attempt`() = runBlocking {
+        val r404 = Response.error<String>(404, "".toResponseBody())
+        var callCount = 0
+        try {
+            withRetry(maxAttempts = 3, delayProvider = {}) {
+                callCount++
+                throw HttpException(r404)
+            }
+        } catch (_: Throwable) {}
+
+        // Must NOT retry — 404 is a client error, not a rate-limit.
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `withRetry does not retry on IOException — fails immediately`() = runBlocking {
+        var callCount = 0
+        try {
+            withRetry(maxAttempts = 3, delayProvider = {}) {
+                callCount++
+                throw IOException("offline")
+            }
+        } catch (_: Throwable) {}
+
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `withRetry uses a fixed delay between every attempt`() = runBlocking {
+        val r429 = Response.error<String>(429, "".toResponseBody())
+        val delays = mutableListOf<Long>()
+        try {
+            withRetry(maxAttempts = 3, retryDelayMs = 1_000L, delayProvider = { ms -> delays.add(ms) }) {
+                throw HttpException(r429)
+            }
+        } catch (_: Throwable) {}
+
+        // Fixed 1-second delay for each of the 2 gaps between 3 attempts.
+        assertThat(delays).containsExactly(1_000L, 1_000L).inOrder()
+    }
+
+    // ----------------------------------------------------------------
+    // isRateLimitError
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `isRateLimitError returns true only for HTTP 429`() {
+        assertThat(HttpException(Response.error<Any>(429, "".toResponseBody())).isRateLimitError()).isTrue()
+        assertThat(HttpException(Response.error<Any>(500, "".toResponseBody())).isRateLimitError()).isFalse()
+        assertThat(IOException("no network").isRateLimitError()).isFalse()
     }
 }
