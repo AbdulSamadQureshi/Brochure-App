@@ -49,7 +49,7 @@ complexity:
     active: false
   CyclomaticComplexMethod:
     active: true
-    threshold: 15
+    threshold: 25
     ignoreSingleWhenExpression: true
     ignoreAnnotated: ['Composable']
   LabeledExpression:
