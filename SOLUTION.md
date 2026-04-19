@@ -383,7 +383,7 @@ The Build & Release job creates a GitHub Release tagged `build-{run_number}` wit
 ## Project Structure
 
 ```
-BonialCodingChallenge/
+CodingChallenge/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml                        # Code quality, tests, coverage, screenshots, release
