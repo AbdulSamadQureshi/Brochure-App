@@ -655,7 +655,7 @@ private const val GRID_COLUMNS_PORTRAIT = 2
 
 @Preview(name = "CharacterItem – default", showBackground = true)
 @Composable
-private fun PreviewCharacterItemDefault() {
+fun PreviewCharacterItemDefault() {
     CloseLoopWalletTheme(dynamicColor = false) {
         CharacterItem(
             name = "Rick Sanchez",
@@ -668,7 +668,7 @@ private fun PreviewCharacterItemDefault() {
 
 @Preview(name = "CharacterItem – favourite", showBackground = true)
 @Composable
-private fun PreviewCharacterItemFavourite() {
+fun PreviewCharacterItemFavourite() {
     CloseLoopWalletTheme(dynamicColor = false) {
         CharacterItem(
             name = "Morty Smith",
@@ -681,7 +681,7 @@ private fun PreviewCharacterItemFavourite() {
 
 @Preview(name = "EmptyState", showBackground = true)
 @Composable
-private fun PreviewEmptyState() {
+fun PreviewEmptyState() {
     CloseLoopWalletTheme(dynamicColor = false) {
         EmptyState()
     }
@@ -689,7 +689,7 @@ private fun PreviewEmptyState() {
 
 @Preview(name = "EmptySearchState", showBackground = true)
 @Composable
-private fun PreviewEmptySearchState() {
+fun PreviewEmptySearchState() {
     CloseLoopWalletTheme(dynamicColor = false) {
         EmptySearchState(query = "Pickle Rick")
     }
@@ -697,7 +697,7 @@ private fun PreviewEmptySearchState() {
 
 @Preview(name = "ErrorMessage – with retry", showBackground = true)
 @Composable
-private fun PreviewErrorMessage() {
+fun PreviewErrorMessage() {
     CloseLoopWalletTheme(dynamicColor = false) {
         ErrorMessage(
             message = "The server is having trouble right now. Please try again later.",
@@ -708,7 +708,7 @@ private fun PreviewErrorMessage() {
 
 @Preview(name = "CharactersLoadingGrid", showBackground = true)
 @Composable
-private fun PreviewCharactersLoadingGrid() {
+fun PreviewCharactersLoadingGrid() {
     CloseLoopWalletTheme(dynamicColor = false) {
         CharactersLoadingGrid()
     }

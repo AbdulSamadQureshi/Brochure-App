@@ -418,7 +418,7 @@ private const val DIVIDER_ALPHA = 0.5f
 
 @Preview(name = "CharacterDetail – shimmer/loading", showBackground = true)
 @Composable
-private fun PreviewCharacterDetailShimmer() {
+fun PreviewCharacterDetailShimmer() {
     CloseLoopWalletTheme(dynamicColor = false) {
         CharacterDetailShimmer()
     }
@@ -426,7 +426,7 @@ private fun PreviewCharacterDetailShimmer() {
 
 @Preview(name = "CharacterDetail – content", showBackground = true)
 @Composable
-private fun PreviewCharacterDetailContent() {
+fun PreviewCharacterDetailContent() {
     CloseLoopWalletTheme(dynamicColor = false) {
         CharacterDetailContent(
             character =
@@ -446,7 +446,7 @@ private fun PreviewCharacterDetailContent() {
 
 @Preview(name = "CharacterDetail – error", showBackground = true)
 @Composable
-private fun PreviewCharacterDetailError() {
+fun PreviewCharacterDetailError() {
     CloseLoopWalletTheme(dynamicColor = false) {
         ErrorMessage(
             message = "The server is having trouble right now. Please try again later.",
