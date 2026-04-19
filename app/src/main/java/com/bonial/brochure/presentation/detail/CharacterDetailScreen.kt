@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -61,7 +62,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
 import com.bonial.brochure.R
-import androidx.compose.ui.tooling.preview.Preview
 import com.bonial.brochure.presentation.home.CharacterDetailEffect
 import com.bonial.brochure.presentation.home.CharacterDetailIntent
 import com.bonial.brochure.presentation.home.CharacterDetailViewModel

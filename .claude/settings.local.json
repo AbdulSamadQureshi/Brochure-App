@@ -31,7 +31,21 @@
       "Bash(gh pr *)",
       "Bash(gh run *)",
       "Bash(gh api *)",
-      "Bash(./gradlew :app:compileDebugKotlin)"
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(./gradlew :domain:testDebugUnitTest --tests \"com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCaseTest\")",
+      "Bash(awk '{s+=$1} END {print \"Total tests:\", s}')",
+      "Bash(./gradlew ktlintCheck)",
+      "Bash(grep -v \"^$\")",
+      "Bash(./gradlew :app:ktlintFormat)",
+      "Bash(./gradlew ktlintCheck testDebugUnitTest)",
+      "Bash(./gradlew ktlintCheck detekt testDebugUnitTest)",
+      "Bash(grep -v \"^\\\\s*[0-9]*Z\\\\s*$\\\\|group\\\\|##\")",
+      "Bash(./gradlew :app:compileDebugUnitTestKotlin)",
+      "Bash(./gradlew :app:recordRoborazziDebug)",
+      "Bash(./gradlew :app:verifyRoborazziDebug)",
+      "Bash(git stash *)"
     ]
   }
 }
