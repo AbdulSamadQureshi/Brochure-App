@@ -11,13 +11,16 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # Runs on: push to develop | PRs targeting develop | PRs targeting main
-  # Skips on: the "closed" event (PR merged/closed) — no point re-linting
+  # Runs on: feature → develop PRs (opened, synchronize, reopened)
+  # Skips on: the "closed" event, and on develop → main PRs (checks already
+  #           passed on every feature PR that fed into develop).
   # ─────────────────────────────────────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,14 +49,13 @@ jobs:
           path: '**/build/reports/detekt/**'
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,15 +81,10 @@ jobs:
           path: '**/build/reports/tests/**'
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
     needs: unit-tests
-    # Only run on feature → develop PRs. The develop → main PR skips this
-    # because coverage was already verified when each feature branch was merged.
     if: >
       github.event.action != 'closed' &&
       github.event.pull_request.base.ref == 'develop'
@@ -122,14 +119,13 @@ jobs:
           path: build/reports/jacoco/jacocoFullReport/jacocoFullReport.xml
           retention-days: 14
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   screenshot-tests:
     name: Screenshot Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

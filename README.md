@@ -452,11 +452,11 @@ Feature branches are **automatically deleted** after their PR is merged. `develo
 
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
-| Push to `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| PR opened → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| PR opened `develop` → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR opened/updated `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
 | PR **merged** `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Direct push to `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+> All checks run only on feature → `develop` PRs. By the time `develop` is ready to release, every commit in it has already been verified. Running the checks again on the `develop → main` PR would be redundant.
 
 ### CI Jobs
 

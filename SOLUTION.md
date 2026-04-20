@@ -376,6 +376,16 @@ feature/*  ──PR──▶  develop  ──PR──▶  main
 - Both `develop` and `main` are protected: no direct pushes, no force pushes, cannot be deleted
 - Feature branches are automatically deleted after their PR merges (via `delete-merged-branch.yml`)
 
+### What runs when
+
+| Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
+|---|---|---|---|---|---|
+| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR opened/updated `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| PR **merged** `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+All four check jobs are scoped to PRs targeting `develop`. By the time `develop → main` is opened every commit in it has already passed all checks on its feature PR — re-running them provides no new signal and wastes CI minutes on every synchronize event.
+
 ### Why build only on `develop → main` merge?
 
 Building on every push to `develop` would produce an APK for every work-in-progress commit. By gating the build behind a deliberate `develop → main` PR, every release is intentional and stakeholders only see completed, reviewed work.
