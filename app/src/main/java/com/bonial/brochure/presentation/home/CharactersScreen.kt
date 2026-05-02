@@ -365,9 +365,9 @@ fun CharactersGrid(
 
 @Composable
 fun ErrorMessage(
+    modifier: Modifier = Modifier,
     message: String?,
     onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.padding(ERROR_MESSAGE_PADDING.dp),
@@ -389,13 +389,13 @@ fun ErrorMessage(
 
 @Composable
 fun CharacterItem(
+    modifier: Modifier = Modifier,
     name: String?,
     status: String?,
     imageUrl: String?,
     isFavourite: Boolean = false,
     onClick: () -> Unit = {},
     onFavouriteClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
