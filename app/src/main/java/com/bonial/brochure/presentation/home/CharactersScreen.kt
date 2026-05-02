@@ -163,7 +163,7 @@ fun CharactersScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = GRID_SPACING.dp)
+                        .padding(horizontal = GRID_PADDING.dp)
                         .padding(
                             top = innerPadding.calculateTopPadding() + SEARCH_BAR_TOP_PADDING.dp,
                             bottom = SEARCH_BAR_BOTTOM_PADDING.dp,
@@ -269,15 +269,15 @@ fun CharactersLoadingGrid(bottomPadding: Dp = 0.dp) {
     val configuration = LocalConfiguration.current
     val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) GRID_COLUMNS_LANDSCAPE else GRID_COLUMNS_PORTRAIT
     LazyVerticalGrid(
+        modifier = Modifier.fillMaxSize(),
         columns = GridCells.Fixed(columns),
         contentPadding =
             PaddingValues(
-                start = GRID_SPACING.dp,
-                end = GRID_SPACING.dp,
-                top = GRID_SPACING.dp,
-                bottom = GRID_SPACING.dp + bottomPadding,
+                start = GRID_PADDING.dp,
+                end = GRID_PADDING.dp,
+                top = GRID_PADDING.dp,
+                bottom = GRID_PADDING.dp + bottomPadding,
             ),
-        modifier = Modifier.fillMaxSize(),
     ) {
         items(SHIMMER_ITEM_COUNT) { CharacterShimmerItem() }
     }
@@ -303,10 +303,10 @@ fun CharactersGrid(
         columns = GridCells.Fixed(columns),
         contentPadding =
             PaddingValues(
-                start = GRID_SPACING.dp,
-                end = GRID_SPACING.dp,
-                top = GRID_SPACING.dp,
-                bottom = GRID_SPACING.dp + bottomPadding,
+                start = GRID_PADDING.dp,
+                end = GRID_PADDING.dp,
+                top = GRID_PADDING.dp,
+                bottom = GRID_PADDING.dp + bottomPadding,
             ),
         modifier =
             modifier
@@ -333,7 +333,7 @@ fun CharactersGrid(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = GRID_SPACING.dp)
+                            .padding(vertical = GRID_PADDING.dp)
                             .testTag("next_page_loading"),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -349,7 +349,7 @@ fun CharactersGrid(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = GRID_SPACING.dp)
+                            .padding(vertical = GRID_PADDING.dp)
                             .testTag("pagination_error_retry"),
                 ) {
                     Text(
@@ -624,7 +624,7 @@ fun CharacterShimmerItem(modifier: Modifier = Modifier) {
 
 private const val PAGING_THRESHOLD = 4
 private const val SHIMMER_ITEM_COUNT = 10
-private const val GRID_SPACING = 16
+private const val GRID_PADDING = 16
 private const val SEARCH_BAR_TOP_PADDING = 8
 private const val SEARCH_BAR_BOTTOM_PADDING = 8
 private const val EMPTY_STATE_PADDING = 32
