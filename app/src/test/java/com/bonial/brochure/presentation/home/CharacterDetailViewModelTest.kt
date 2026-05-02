@@ -1,6 +1,9 @@
 package com.bonial.brochure.presentation.home
 
 import app.cash.turbine.test
+import com.bonial.brochure.presentation.detail.CharacterDetailEffect
+import com.bonial.brochure.presentation.detail.CharacterDetailIntent
+import com.bonial.brochure.presentation.detail.CharacterDetailViewModel
 import com.bonial.brochure.presentation.navigation.CharacterDetailKey
 import com.bonial.brochure.testing.MainDispatcherRule
 import com.bonial.domain.model.CharacterDetail
@@ -24,7 +27,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * ViewModel tests for [CharacterDetailViewModel].
+ * ViewModel tests for [com.bonial.brochure.presentation.detail.CharacterDetailViewModel].
  *
  * Navigation 3 passes the [CharacterDetailKey] directly via assisted injection, so
  * there is no need for [android.os.SavedStateHandle] or a Robolectric test runner.

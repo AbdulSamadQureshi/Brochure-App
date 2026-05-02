@@ -62,9 +62,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
 import com.bonial.brochure.R
-import com.bonial.brochure.presentation.home.CharacterDetailEffect
-import com.bonial.brochure.presentation.home.CharacterDetailIntent
-import com.bonial.brochure.presentation.home.CharacterDetailViewModel
 import com.bonial.brochure.presentation.home.ErrorMessage
 import com.bonial.brochure.presentation.home.ImageErrorPlaceholder
 import com.bonial.brochure.presentation.model.CharacterDetailUi

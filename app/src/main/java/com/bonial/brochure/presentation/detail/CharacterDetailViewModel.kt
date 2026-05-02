@@ -1,10 +1,11 @@
-package com.bonial.brochure.presentation.home
+package com.bonial.brochure.presentation.detail
 
 import androidx.lifecycle.viewModelScope
 import com.bonial.brochure.presentation.model.CharacterDetailUi
 import com.bonial.brochure.presentation.navigation.CharacterDetailKey
 import com.bonial.brochure.presentation.utils.toErrorMessage
 import com.bonial.core.base.MviViewModel
+import com.bonial.domain.model.CharacterDetail
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharacterDetailUseCase
 import com.bonial.domain.useCase.characters.GetCharacterShareTextUseCase
@@ -139,7 +140,7 @@ class CharacterDetailViewModel
 
             viewModelScope.launch {
                 val detail =
-                    com.bonial.domain.model.CharacterDetail(
+                    CharacterDetail(
                         id = character.id,
                         name = character.name,
                         status = character.status,

@@ -45,7 +45,14 @@
       "Bash(./gradlew :app:compileDebugUnitTestKotlin)",
       "Bash(./gradlew :app:recordRoborazziDebug)",
       "Bash(./gradlew :app:verifyRoborazziDebug)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(./gradlew :data:testDebugUnitTest --tests \"com.bonial.data.integration.*\")",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(./gradlew :data:ktlintTestSourceSetCheck)",
+      "Bash(./gradlew :data:ktlintTestSourceSetFormat)",
+      "Bash(git reset *)",
+      "Bash(git commit *)"
     ]
   }
 }
