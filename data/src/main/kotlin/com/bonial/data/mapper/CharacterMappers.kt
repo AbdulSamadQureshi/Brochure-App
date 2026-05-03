@@ -1,5 +1,6 @@
 package com.bonial.data.mapper
 
+import com.bonial.data.local.CharacterEntity
 import com.bonial.data.remote.model.CharacterDto
 import com.bonial.data.remote.model.CharacterResponseDto
 import com.bonial.domain.model.Character
@@ -31,4 +32,31 @@ internal fun CharacterResponseDto.toDomainPage(): CharactersPage =
     CharactersPage(
         characters = results.orEmpty().map { it.toDomain() },
         totalPages = info?.pages ?: 1,
+    )
+
+// ── Entity ↔ Domain ──────────────────────────────────────────────────────────
+
+internal fun CharacterDto.toEntity(
+    page: Int,
+    totalPages: Int,
+    cachedAt: Long,
+): CharacterEntity =
+    CharacterEntity(
+        id = id,
+        name = name,
+        status = status,
+        species = species,
+        imageUrl = image,
+        page = page,
+        totalPages = totalPages,
+        cachedAt = cachedAt,
+    )
+
+internal fun CharacterEntity.toDomain(): Character =
+    Character(
+        id = id,
+        name = name,
+        status = status,
+        species = species,
+        imageUrl = imageUrl,
     )

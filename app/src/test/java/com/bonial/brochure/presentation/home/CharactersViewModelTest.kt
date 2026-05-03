@@ -55,8 +55,7 @@ class CharactersViewModelTest {
         whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(result)))
     }
 
-    private fun viewModel(): CharactersViewModel =
-        CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
+    private fun viewModel(): CharactersViewModel = CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
 
     // ─── initial load ─────────────────────────────────────────────────────────
 
