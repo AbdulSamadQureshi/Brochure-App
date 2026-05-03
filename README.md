@@ -23,7 +23,7 @@ All three extra features from the brief (Search, Favourites, Share) are fully im
 | **Favourites** | Persisted in Room DB; synced in real time across list and detail screens |
 | **Character detail** | Full info screen with species, status, origin, location |
 | **Share** | Android share-sheet with formatted character card text |
-| **Offline support** | Favourites survive network loss via Room; list served from in-memory StateFlow cache |
+| **Offline support** | Favourites and character list pages cached in Room with a 30-minute TTL; app works fully offline within TTL window |
 | **Error & retry** | Full-screen error + retry on initial load; sticky in-grid retry banner on pagination failure |
 | **Shimmer loading** | Skeleton shimmer on initial load, pagination, and detail screen image load |
 
@@ -77,7 +77,8 @@ graph TD
     end
     subgraph ":data"
         RP[CharactersRepositoryImpl]
-        DB[(Room DB v2)]
+        DB[(Room DB v3)]
+        MM[CharactersRemoteMediator]
     end
     subgraph ":network"
         API[CharactersApiService]
@@ -90,7 +91,8 @@ graph TD
     UC -->|fetch| RI
     RI -.->|implements| RP
     RP -->|fetch| API
-    RP -->|persist favourites| DB
+    RP -->|cache characters + persist favourites| DB
+    MM -->|network→Room sync| DB
     API --> RF
 ```
 
@@ -246,10 +248,10 @@ When page 2+ fails, the loaded list is preserved and a sticky **"Failed to load 
 
 | Area | Chosen | Alternative considered | Why chosen |
 |---|---|---|---|
-| **Pagination** | Manual scroll-threshold | Paging 3 | Paging 3 adds significant complexity (PagingSource, RemoteMediator, PagingData adapter) that is only justified for large datasets or multi-source pagination. A single API with simple append semantics does not need it. |
+| **Pagination** | Manual scroll-threshold + Paging 3 infrastructure ready | Paging 3 ViewModel/Screen migration | `CharactersRemoteMediator` and `CharactersDao.pagingSource()` are in place. ViewModel and Screen still use manual pagination; migrating to `collectAsLazyPagingItems()` is the next step. |
 | **State management** | MVI (single state + intents) | Plain MVVM (multiple StateFlows) | MVI prevents inconsistent UI state combinations when multiple async operations touch overlapping fields. |
-| **Module structure** | Layer modules as the base | Feature modules added on top as the app grows | Layer modules are the correct foundation — they enforce compile-time boundaries and faster incremental builds today, and become the shared infrastructure that feature modules depend on when the team scales. |
-| **Offline list cache** | In-memory StateFlow | Room persistence | Full list persistence would require a TTL strategy and cache invalidation logic. In-memory cache covers the app session; favourites are always persisted. |
+| **Module structure** | Layer modules + feature module scaffolding | Feature modules as first-class citizens from day one | Feature modules need cross-cutting use cases to have a natural home. Layer modules handle this cleanly today; `:feature:characters` and `:feature:favorites` are scaffolded and ready for the screens to migrate into. |
+| **Offline list cache** | Room with 30-min TTL per page | In-memory StateFlow only | Room cache survives process death. TTL ensures stale data is refreshed on next open. Search queries bypass the cache so filtered results never pollute the unfiltered page cache. |
 | **Favourite PK** | Image URL | Character ID | URL-based PK survives API schema changes and works across any character source without coupling to Rick & Morty's ID scheme. |
 | **Share text** | ViewModel use-case | Compose/UI layer | Keeps pure Kotlin logic fully unit-testable without an Android context. |
 | **Retry mechanism** | Generation counter | Separate retry StateFlow | A single StateFlow with a generation counter avoids coordinating two flows; the same debounce lambda handles both search and retry cases. |
@@ -311,10 +313,9 @@ Feature modules depend on `:domain` and `:core` but not on each other — the sa
 
 ### CI/CD scaling
 
-The current pipeline runs all jobs sequentially per PR. As the team grows:
-- Split `unit-tests` into per-module jobs (`test-domain`, `test-data`, `test-app`) and run them in parallel
-- Cache Gradle build outputs between runs (already using configuration cache)
-- Add an emulator job for instrumented tests once Room DAO coverage becomes important
+Unit tests already run in three parallel jobs (`test-domain`, `test-data`, `test-app`), all gated on `code-quality` and all feeding `coverage`. Future steps:
+- Cache Gradle remote build cache across runners (configuration cache is already enabled)
+- Add an emulator runner job for `FavouritesDaoTest` and `CharactersDaoTest` (currently require an Android device/emulator)
 - Promote screenshot baselines to a dedicated branch updated only on approved design changes
 
 ### Code quality at scale
@@ -404,14 +405,15 @@ Releases are cut by merging any PR into `main` (`develop → main` for normal re
 |---|---|---|
 | ViewModels | JUnit 4 + Mockito + Turbine | State transitions, debounce timing, pagination guards, effect emissions |
 | Use cases | JUnit 4 + Mockito + Truth | Enrichment logic, blank-name sanitisation, error passthrough, Flow reactivity |
-| Repository (unit) | JUnit 4 + Mockito | DTO mapping, DAO interactions, Flow emissions |
+| Repository (unit) | JUnit 4 + Mockito | DTO mapping, DAO interactions, cache-hit/miss branching, Flow emissions |
 | API integration | JUnit 4 + MockWebServer + Turbine | Full HTTP → DTO → domain model pipeline; `safeApiCall` and `withRetry` end-to-end |
+| Room DAO (instrumented) | AndroidJUnit4 + in-memory Room + Truth | `FavouritesDao` (6 tests) and `CharactersDao` (9 tests) — SQL correctness, REPLACE conflict, TTL fields, Flow emissions |
 | UI / Screenshots | Roborazzi + Robolectric | Pixel-perfect Compose rendering against committed baselines |
 
 ### What is NOT tested and why
 
 - **Compose UI components**: Testing individual composables with `ComposeTestRule` requires either an emulator or Robolectric with a full Compose renderer. Screenshot tests cover visual correctness; all business logic is covered at the ViewModel and use-case layers.
-- **Room DAOs**: DAO testing requires an in-memory Room database with a real Android context. Given the repository layer is mocked in ViewModel tests and the DAO operations are simple CRUD, this was deprioritised in favour of broader logic coverage.
+- **`CharactersRemoteMediator`**: End-to-end testing requires a real `PagingState` and Room `PagingSource`. The mediator's network-to-Room path is covered indirectly by the existing `CharactersRepositoryIntegrationTest`. A dedicated mediator test will be added alongside the ViewModel-side Paging 3 migration.
 
 ### Coverage (JaCoCo)
 
@@ -465,8 +467,10 @@ Feature branches are **automatically deleted** after their PR is merged. `develo
 | Job | Description |
 |---|---|
 | **Code Quality** | `ktlintCheck` (style) + `detekt` (static analysis, zero-tolerance). Reports uploaded as artifacts (7-day). |
-| **Unit Tests** | `testDebugUnitTest` across all modules. Reports uploaded (7-day). |
-| **Code Coverage** | `jacocoFullReport` — HTML + XML reports uploaded (14-day). |
+| **Unit Tests · :domain** | `:domain:testDebugUnitTest` — runs in parallel with `:data` and `:app` jobs. Reports uploaded (7-day). |
+| **Unit Tests · :data** | `:data:testDebugUnitTest` — runs in parallel with `:domain` and `:app` jobs. Reports uploaded (7-day). |
+| **Unit Tests · :app + :core + :network** | `:app`, `:core`, `:network` unit tests — runs in parallel with `:domain` and `:data` jobs. Reports uploaded (7-day). |
+| **Code Coverage** | `jacocoFullReport` — waits on all three unit-test jobs. HTML + XML reports uploaded (14-day). |
 | **Screenshot Tests** | `verifyRoborazziDebug` — pixel comparison against baselines. Diff PNGs uploaded on failure (7-day). |
 | **Build & Release** | Signs and builds debug APK, renames to `brochure-debug-{date}-{sha}.apk`, publishes GitHub Release. Stakeholders download directly from the Releases page. |
 
