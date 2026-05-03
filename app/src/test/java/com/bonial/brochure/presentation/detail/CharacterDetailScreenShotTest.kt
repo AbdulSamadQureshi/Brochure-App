@@ -2,7 +2,7 @@ package com.bonial.brochure.presentation.detail
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
-import com.bonial.brochure.presentation.home.ErrorMessage
+import com.bonial.brochure.presentation.character.ErrorMessage
 import com.bonial.brochure.presentation.model.CharacterDetailUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import com.github.takahirom.roborazzi.RoborazziOptions

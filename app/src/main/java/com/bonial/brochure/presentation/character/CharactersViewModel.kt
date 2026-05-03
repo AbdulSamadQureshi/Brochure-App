@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.home
+package com.bonial.brochure.presentation.character
 
 import androidx.lifecycle.viewModelScope
 import com.bonial.brochure.presentation.model.CharacterUi
@@ -10,6 +10,7 @@ import com.bonial.domain.useCase.characters.CharactersParams
 import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,7 +119,7 @@ class CharactersViewModel
             }
         }
 
-        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+        @OptIn(ExperimentalCoroutinesApi::class)
         private fun observeSearch() {
             viewModelScope.launch {
                 searchParams

@@ -12,22 +12,22 @@ import kotlinx.coroutines.launch
 
 /**
  * Base ViewModel for MVI architecture.
- * [S] represents the UI State.
- * [I] represents the User Intent.
- * [E] represents the Side Effect (one-time events).
+ * [State] represents the UI State.
+ * [Intent] represents the User Intent.
+ * [Effect] represents the Side Effect (one-time events).
  */
-abstract class MviViewModel<S, I, E> : ViewModel() {
-    private val initialState: S by lazy { createInitialState() }
+abstract class MviViewModel<State, Intent, Effect> : ViewModel() {
+    private val initialState: State by lazy { createInitialState() }
 
-    abstract fun createInitialState(): S
+    abstract fun createInitialState(): State
 
     private val _uiState = MutableStateFlow(initialState)
-    val uiState: StateFlow<S> = _uiState.asStateFlow()
+    val uiState: StateFlow<State> = _uiState.asStateFlow()
 
-    private val _intentFlow = Channel<I>(Channel.BUFFERED)
+    private val _intentFlow = Channel<Intent>(Channel.BUFFERED)
     val intentFlow = _intentFlow.receiveAsFlow()
 
-    private val _effect = Channel<E>(Channel.CONFLATED)
+    private val _effect = Channel<Effect>(Channel.CONFLATED)
     val effect = _effect.receiveAsFlow()
 
     init {
@@ -42,22 +42,22 @@ abstract class MviViewModel<S, I, E> : ViewModel() {
         }
     }
 
-    fun sendIntent(intent: I) {
+    fun sendIntent(intent: Intent) {
         viewModelScope.launch {
             _intentFlow.send(intent)
         }
     }
 
-    protected fun setState(reduce: S.() -> S) {
+    protected fun setState(reduce: State.() -> State) {
         _uiState.update { it.reduce() }
     }
 
-    protected fun setEffect(builder: () -> E) {
+    protected fun setEffect(builder: () -> Effect) {
         val effectValue = builder()
         viewModelScope.launch {
             _effect.send(effectValue)
         }
     }
 
-    abstract fun handleIntent(intent: I)
+    abstract fun handleIntent(intent: Intent)
 }

@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.home
+package com.bonial.brochure.presentation.character
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.Spring

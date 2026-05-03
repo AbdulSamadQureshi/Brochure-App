@@ -1,6 +1,8 @@
 package com.bonial.brochure.presentation.home
 
 import app.cash.turbine.test
+import com.bonial.brochure.presentation.character.CharactersIntent
+import com.bonial.brochure.presentation.character.CharactersViewModel
 import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.testing.MainDispatcherRule
 import com.bonial.domain.model.CharacterWithFavourite
@@ -53,7 +55,8 @@ class CharactersViewModelTest {
         whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(flowOf(Request.Success(result)))
     }
 
-    private fun viewModel(): CharactersViewModel = CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
+    private fun viewModel(): CharactersViewModel =
+        CharactersViewModel(getEnrichedCharactersUseCase, toggleFavourite)
 
     // ─── initial load ─────────────────────────────────────────────────────────
 

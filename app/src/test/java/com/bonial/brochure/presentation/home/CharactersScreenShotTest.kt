@@ -3,6 +3,11 @@ package com.bonial.brochure.presentation.home
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import com.bonial.brochure.presentation.character.CharactersGrid
+import com.bonial.brochure.presentation.character.CharactersLoadingGrid
+import com.bonial.brochure.presentation.character.EmptySearchState
+import com.bonial.brochure.presentation.character.EmptyState
+import com.bonial.brochure.presentation.character.ErrorMessage
 import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import com.github.takahirom.roborazzi.RoborazziOptions

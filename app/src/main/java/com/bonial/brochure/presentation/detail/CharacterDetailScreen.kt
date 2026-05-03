@@ -62,8 +62,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
 import com.bonial.brochure.R
-import com.bonial.brochure.presentation.home.ErrorMessage
-import com.bonial.brochure.presentation.home.ImageErrorPlaceholder
+import com.bonial.brochure.presentation.character.ErrorMessage
+import com.bonial.brochure.presentation.character.ImageErrorPlaceholder
 import com.bonial.brochure.presentation.model.CharacterDetailUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import com.bonial.brochure.presentation.theme.toStatusColorSet
