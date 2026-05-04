@@ -5,7 +5,6 @@ import com.bonial.data.local.CharactersDao
 import com.bonial.data.remote.service.CharactersApiService
 import com.bonial.data.repository.CharactersRepositoryImpl
 import com.bonial.domain.model.network.response.Request
-import org.mockito.kotlin.mock
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
@@ -13,6 +12,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.mock
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
