@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_search">Search characters…</string>
+    <string name="content_desc_clear_search">Clear search</string>
+    <string name="empty_state_title">No characters yet</string>
+    <string name="empty_state_subtitle">Tap retry to load characters</string>
+    <string name="empty_search_title">No results found</string>
+    <string name="empty_search_subtitle">Try a different search term</string>
+    <string name="pagination_error_retry">Failed to load more. Tap to retry.</string>
+    <string name="error_generic">Something went wrong, please try again later.</string>
+    <string name="error_image_unavailable">Image unavailable</string>
+    <string name="content_desc_character_image">Character Image</string>
+    <string name="content_desc_favourite">Add to favourites</string>
+    <string name="content_desc_unfavourite">Remove from favourites</string>
+    <string name="label_retry">Retry</string>
+</resources>

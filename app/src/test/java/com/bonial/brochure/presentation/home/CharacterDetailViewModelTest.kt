@@ -1,10 +1,6 @@
 package com.bonial.brochure.presentation.home
 
 import app.cash.turbine.test
-import com.bonial.brochure.presentation.detail.CharacterDetailEffect
-import com.bonial.brochure.presentation.detail.CharacterDetailIntent
-import com.bonial.brochure.presentation.detail.CharacterDetailViewModel
-import com.bonial.brochure.presentation.navigation.CharacterDetailKey
 import com.bonial.brochure.testing.MainDispatcherRule
 import com.bonial.domain.model.CharacterDetail
 import com.bonial.domain.model.network.response.ApiError
@@ -13,6 +9,10 @@ import com.bonial.domain.useCase.characters.CharacterDetailUseCase
 import com.bonial.domain.useCase.characters.GetCharacterShareTextUseCase
 import com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
+import com.bonial.feature.detail.CharacterDetailEffect
+import com.bonial.feature.detail.CharacterDetailIntent
+import com.bonial.feature.detail.CharacterDetailKey
+import com.bonial.feature.detail.CharacterDetailViewModel
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,8 +64,8 @@ class CharacterDetailViewModelTest {
                 var state = awaitItem()
                 while (state.isLoading || state.character == null) state = awaitItem()
 
-                assertThat(state.character.id).isEqualTo(CHARACTER_ID)
-                assertThat(state.character.name).isEqualTo("Rick Sanchez")
+                assertThat(state.character!!.id).isEqualTo(CHARACTER_ID)
+                assertThat(state.character!!.name).isEqualTo("Rick Sanchez")
                 assertThat(state.isLoading).isFalse()
                 assertThat(state.error).isNull()
                 cancelAndIgnoreRemainingEvents()
@@ -141,7 +141,7 @@ class CharacterDetailViewModelTest {
                 var state = awaitItem()
                 while (state.isLoading || state.character == null) state = awaitItem()
 
-                assertThat(state.character.id).isEqualTo(CHARACTER_ID)
+                assertThat(state.character!!.id).isEqualTo(CHARACTER_ID)
                 assertThat(state.error).isNull()
                 cancelAndIgnoreRemainingEvents()
             }
@@ -177,7 +177,7 @@ class CharacterDetailViewModelTest {
                 while (state.isLoading || state.character == null) state = awaitItem()
 
                 // Only the second (successful) response should appear — not the stale Loading.
-                assertThat(state.character.id).isEqualTo(CHARACTER_ID)
+                assertThat(state.character!!.id).isEqualTo(CHARACTER_ID)
                 assertThat(state.error).isNull()
                 cancelAndIgnoreRemainingEvents()
             }

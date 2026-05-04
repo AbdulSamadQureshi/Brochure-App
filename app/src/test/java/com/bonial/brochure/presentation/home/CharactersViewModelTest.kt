@@ -1,9 +1,6 @@
 package com.bonial.brochure.presentation.home
 
 import app.cash.turbine.test
-import com.bonial.brochure.presentation.character.CharactersIntent
-import com.bonial.brochure.presentation.character.CharactersViewModel
-import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.testing.MainDispatcherRule
 import com.bonial.domain.model.CharacterWithFavourite
 import com.bonial.domain.model.CharactersWithFavouritePage
@@ -12,6 +9,9 @@ import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharactersParams
 import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
+import com.bonial.feature.characters.CharacterUi
+import com.bonial.feature.characters.CharactersIntent
+import com.bonial.feature.characters.CharactersViewModel
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow

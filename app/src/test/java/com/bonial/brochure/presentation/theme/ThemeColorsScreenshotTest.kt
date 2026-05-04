@@ -19,6 +19,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
+import com.bonial.core.ui.theme.StatusAlive
+import com.bonial.core.ui.theme.StatusAliveBg
+import com.bonial.core.ui.theme.StatusAliveText
+import com.bonial.core.ui.theme.StatusDead
+import com.bonial.core.ui.theme.StatusDeadBg
+import com.bonial.core.ui.theme.StatusDeadText
+import com.bonial.core.ui.theme.StatusUnknown
+import com.bonial.core.ui.theme.StatusUnknownBg
+import com.bonial.core.ui.theme.StatusUnknownText
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule

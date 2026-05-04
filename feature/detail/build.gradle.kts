@@ -1,28 +1,15 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-/**
- * :feature:favorites
- *
- * Owns everything the user sees in the Favourites tab:
- *   - FavouritesScreen (grid of favourited characters)
- *   - FavouritesViewModel
- *   - Navigation routes for this feature
- *
- * Migration note: Favourites logic is currently embedded in :app alongside
- * the characters feature. Extracting it here isolates the domain boundary
- * (FavouritesRepository, ToggleFavouriteUseCase) from unrelated UI code and
- * makes the module independently testable.
- * See SOLUTION.md § "Future work — feature modules" for the full migration plan.
- */
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "com.bonial.feature.favorites"
+    namespace = "com.bonial.feature.detail"
     compileSdk = 37
 
     defaultConfig {
@@ -51,9 +38,21 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
+
+    // NavKey requires Serializable — needed for CharacterDetailKey
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation3.runtime)
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -2,9 +2,11 @@ package com.bonial.brochure.presentation.detail
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
-import com.bonial.brochure.presentation.character.ErrorMessage
-import com.bonial.brochure.presentation.model.CharacterDetailUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
+import com.bonial.feature.detail.CharacterDetailContent
+import com.bonial.feature.detail.CharacterDetailShimmer
+import com.bonial.feature.detail.CharacterDetailUi
+import com.bonial.feature.detail.ErrorMessage
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule

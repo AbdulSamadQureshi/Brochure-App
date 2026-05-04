@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.detail
+package com.bonial.feature.detail
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,13 +63,9 @@ import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
-import com.bonial.brochure.R
-import com.bonial.brochure.presentation.character.ErrorMessage
-import com.bonial.brochure.presentation.character.ImageErrorPlaceholder
-import com.bonial.brochure.presentation.model.CharacterDetailUi
-import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
-import com.bonial.brochure.presentation.theme.toStatusColorSet
 import com.bonial.core.ui.extensions.shimmerEffect
+import com.bonial.core.ui.theme.toStatusColorSet
+import com.bonial.feature.detail.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -173,7 +171,7 @@ fun CharacterDetailScreen(
  * layout shift when content arrives.
  */
 @Composable
-internal fun CharacterDetailShimmer() {
+fun CharacterDetailShimmer() {
     Column(
         modifier =
             Modifier
@@ -220,7 +218,7 @@ internal fun CharacterDetailShimmer() {
 }
 
 @Composable
-internal fun CharacterDetailContent(character: CharacterDetailUi) {
+fun CharacterDetailContent(character: CharacterDetailUi) {
     var imageLoaded by remember { mutableStateOf(false) }
     var imageError by remember { mutableStateOf(false) }
     var contentVisible by remember { mutableStateOf(false) }
@@ -256,7 +254,7 @@ internal fun CharacterDetailContent(character: CharacterDetailUi) {
                     ImageRequest
                         .Builder(LocalContext.current)
                         .data(character.imageUrl)
-                        .placeholder(R.drawable.placeholder_image)
+                        .placeholder(com.bonial.core.R.drawable.placeholder_image)
                         .crossfade(IMAGE_CROSSFADE_MS)
                         .build(),
                 contentDescription = character.name,
@@ -392,6 +390,64 @@ private fun DetailRow(
     }
 }
 
+// ─── Shared UI helpers ───────────────────────────────────────────────────────
+
+@Composable
+fun ErrorMessage(
+    modifier: Modifier = Modifier,
+    message: String?,
+    onRetry: (() -> Unit)? = null,
+) {
+    Column(
+        modifier = modifier.padding(ERROR_MESSAGE_PADDING.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = message ?: stringResource(R.string.error_generic),
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+        )
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(VERTICAL_SPACER_LARGE.dp))
+            Button(onClick = onRetry) {
+                Text(text = stringResource(R.string.label_retry))
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageErrorPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .testTag("error_placeholder")
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = IMAGE_ERROR_ALPHA),
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            AsyncImage(
+                model = com.bonial.core.R.drawable.placeholder_error,
+                contentDescription = null,
+                modifier = Modifier.size(IMAGE_ERROR_ICON_SIZE.dp),
+                contentScale = ContentScale.Fit,
+            )
+            Spacer(modifier = Modifier.height(VERTICAL_SPACER_SMALL.dp))
+            Text(
+                text = stringResource(R.string.error_image_unavailable),
+                fontSize = IMAGE_ERROR_TEXT_SIZE.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 private const val IMAGE_CROSSFADE_MS = 400
 private const val ANIMATION_DURATION_MS = 400
 private const val CONTENT_PADDING = 20
@@ -410,13 +466,19 @@ private const val DETAIL_ROW_VERTICAL_PADDING = 10
 private const val DETAIL_ROW_LABEL_FONT_SIZE = 14
 private const val DETAIL_ROW_VALUE_FONT_SIZE = 14
 private const val DIVIDER_ALPHA = 0.5f
+private const val IMAGE_ERROR_ALPHA = 0.5f
+private const val IMAGE_ERROR_ICON_SIZE = 48
+private const val IMAGE_ERROR_TEXT_SIZE = 12
+private const val VERTICAL_SPACER_SMALL = 4
+private const val VERTICAL_SPACER_LARGE = 8
+private const val ERROR_MESSAGE_PADDING = 16
 
 // ─── Previews ────────────────────────────────────────────────────────────────
 
 @Preview(name = "CharacterDetail – shimmer/loading", showBackground = true)
 @Composable
 fun PreviewCharacterDetailShimmer() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterDetailShimmer()
     }
 }
@@ -424,7 +486,7 @@ fun PreviewCharacterDetailShimmer() {
 @Preview(name = "CharacterDetail – content", showBackground = true)
 @Composable
 fun PreviewCharacterDetailContent() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterDetailContent(
             character =
                 CharacterDetailUi(
@@ -444,7 +506,7 @@ fun PreviewCharacterDetailContent() {
 @Preview(name = "CharacterDetail – error", showBackground = true)
 @Composable
 fun PreviewCharacterDetailError() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         ErrorMessage(
             message = "The server is having trouble right now. Please try again later.",
             onRetry = {},

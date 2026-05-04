@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.character
+package com.bonial.feature.characters
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.Spring
@@ -75,11 +75,10 @@ import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
-import com.bonial.brochure.R
-import com.bonial.brochure.presentation.model.CharacterUi
-import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
-import com.bonial.brochure.presentation.theme.toStatusColorSet
 import com.bonial.core.ui.extensions.shimmerEffect
+import com.bonial.core.ui.theme.toStatusColorSet
+import com.bonial.feature.characters.CharacterUi
+import com.bonial.feature.characters.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -529,7 +528,7 @@ fun CharacterImage(
             ImageRequest
                 .Builder(LocalContext.current)
                 .data(imageUrl)
-                .placeholder(R.drawable.placeholder_image)
+                .placeholder(com.bonial.core.R.drawable.placeholder_image)
                 .crossfade(true)
                 .build(),
         contentDescription =
@@ -555,7 +554,7 @@ fun ImageErrorPlaceholder(modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             AsyncImage(
-                model = R.drawable.placeholder_error,
+                model = com.bonial.core.R.drawable.placeholder_error,
                 contentDescription = null,
                 modifier = Modifier.size(IMAGE_ERROR_ICON_SIZE.dp),
                 contentScale = ContentScale.Fit,
@@ -656,7 +655,7 @@ private const val GRID_COLUMNS_PORTRAIT = 2
 @Preview(name = "CharacterItem – default", showBackground = true)
 @Composable
 fun PreviewCharacterItemDefault() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterItem(
             name = "Rick Sanchez",
             status = "Alive",
@@ -669,7 +668,7 @@ fun PreviewCharacterItemDefault() {
 @Preview(name = "CharacterItem – favourite", showBackground = true)
 @Composable
 fun PreviewCharacterItemFavourite() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterItem(
             name = "Morty Smith",
             status = "Dead",
@@ -682,7 +681,7 @@ fun PreviewCharacterItemFavourite() {
 @Preview(name = "EmptyState", showBackground = true)
 @Composable
 fun PreviewEmptyState() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         EmptyState()
     }
 }
@@ -690,7 +689,7 @@ fun PreviewEmptyState() {
 @Preview(name = "EmptySearchState", showBackground = true)
 @Composable
 fun PreviewEmptySearchState() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         EmptySearchState(query = "Pickle Rick")
     }
 }
@@ -698,7 +697,7 @@ fun PreviewEmptySearchState() {
 @Preview(name = "ErrorMessage – with retry", showBackground = true)
 @Composable
 fun PreviewErrorMessage() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         ErrorMessage(
             message = "The server is having trouble right now. Please try again later.",
             onRetry = {},
@@ -709,7 +708,7 @@ fun PreviewErrorMessage() {
 @Preview(name = "CharactersLoadingGrid", showBackground = true)
 @Composable
 fun PreviewCharactersLoadingGrid() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharactersLoadingGrid()
     }
 }

@@ -1,20 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-/**
- * :feature:characters
- *
- * Owns everything the user sees when browsing and searching characters:
- *   - CharactersScreen (list + search bar)
- *   - CharacterDetailScreen
- *   - CharactersViewModel / CharacterDetailViewModel
- *   - UI models (CharacterUi, CharacterDetailUi)
- *   - Navigation routes for this feature
- *
- * Migration note: Compose screens and ViewModels currently live in :app under
- * `presentation/character` and `presentation/detail`. Moving them here is a
- * pure refactoring step that does not change any observable behaviour.
- * See SOLUTION.md § "Future work — feature modules" for the full migration plan.
- */
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
@@ -52,10 +37,17 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
-    implementation(libs.paging.compose)
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }
