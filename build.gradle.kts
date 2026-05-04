@@ -59,12 +59,18 @@ val jacocoExcludes =
         "**/MainActivity*",
     )
 
+// Only subprojects that own a build file are real Android modules.
+// Gradle auto-creates container projects (e.g. `:feature`) for namespaced
+// includes like `:feature:characters`; those containers have no plugin and
+// therefore no `testDebugUnitTest` task.
+val androidSubprojects = subprojects.filter { it.buildFile.exists() }
+
 tasks.register<JacocoReport>("jacocoFullReport") {
     group = "verification"
     description = "Generates an aggregated JaCoCo coverage report across all modules."
 
-    // Depend on every module's debug unit-test task.
-    dependsOn(subprojects.map { "${it.path}:testDebugUnitTest" })
+    // Depend on every real module's debug unit-test task.
+    dependsOn(androidSubprojects.map { "${it.path}:testDebugUnitTest" })
 
     // .exec files written by AGP when enableUnitTestCoverage = true.
     executionData.setFrom(
@@ -76,7 +82,7 @@ tasks.register<JacocoReport>("jacocoFullReport") {
     // Compiled Kotlin production classes (AGP 9 path; excludes generated code).
     classDirectories.setFrom(
         files(
-            subprojects.map { proj ->
+            androidSubprojects.map { proj ->
                 fileTree(
                     "${proj.layout.buildDirectory.get()}/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
                 ) {
@@ -89,7 +95,7 @@ tasks.register<JacocoReport>("jacocoFullReport") {
     // Human-readable source paths (so the HTML report links to actual .kt files).
     sourceDirectories.setFrom(
         files(
-            subprojects
+            androidSubprojects
                 .flatMap { proj ->
                     listOf(
                         "${proj.projectDir}/src/main/java",

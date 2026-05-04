@@ -1,15 +1,15 @@
-package com.bonial.brochure.presentation.home
+package com.bonial.feature.characters
 
 import androidx.lifecycle.viewModelScope
-import com.bonial.brochure.presentation.model.CharacterUi
-import com.bonial.brochure.presentation.utils.toErrorMessage
 import com.bonial.core.base.MviViewModel
 import com.bonial.domain.model.CharactersWithFavouritePage
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharactersParams
 import com.bonial.domain.useCase.characters.GetEnrichedCharactersUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
+import com.bonial.domain.utils.toErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,8 +99,6 @@ class CharactersViewModel
                 is CharactersIntent.ToggleFavourite -> toggleFavourite(intent.character)
 
                 is CharactersIntent.Search -> {
-                    // Cancel any in-flight pagination so stale results don't arrive after the
-                    // new search result set lands.
                     paginationJob?.cancel()
                     paginationJob = null
 
@@ -112,30 +110,25 @@ class CharactersViewModel
                             error = null,
                         )
                     }
-                    // Emit with generation=0 for a brand-new query (debounce applies).
                     searchParams.value = intent.query to 0
                 }
             }
         }
 
-        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+        @OptIn(ExperimentalCoroutinesApi::class)
         private fun observeSearch() {
             viewModelScope.launch {
                 searchParams
                     .debounce { (query, gen) ->
                         when {
-                            gen > 0 -> 0L // Retry — fire immediately.
-                            query.isEmpty() -> 0L // Clear — fire immediately.
+                            gen > 0 -> 0L
+                            query.isEmpty() -> 0L
                             else -> SEARCH_DEBOUNCE_MS
                         }
                     }.flatMapLatest { (query, _) ->
                         getEnrichedCharactersUseCase(CharactersParams(page = 1, name = query))
                     }.collect { response ->
-                        handleResponse(
-                            response = response,
-                            isNextPage = false,
-                            page = 1,
-                        )
+                        handleResponse(response = response, isNextPage = false, page = 1)
                     }
             }
         }
@@ -147,7 +140,6 @@ class CharactersViewModel
             paginationJob =
                 viewModelScope.launch {
                     setState { copy(isLoadingNextPage = true) }
-
                     getEnrichedCharactersUseCase(CharactersParams(page, query)).collectLatest { response ->
                         handleResponse(response, isNextPage = true, page = page)
                     }
@@ -204,8 +196,6 @@ class CharactersViewModel
             val message = response.apiError.toErrorMessage()
 
             if (isNextPage && !isNoResults) {
-                // Pagination failure — preserve the loaded list and show a
-                // sticky retry banner in the grid footer.
                 setState { copy(isLoadingNextPage = false, paginationError = message) }
             } else {
                 setState {

@@ -9,7 +9,7 @@ import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class CharactersActivity : ComponentActivity() {
+class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

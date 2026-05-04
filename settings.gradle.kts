@@ -26,3 +26,8 @@ include(":data")
 include(":domain")
 include(":network")
 include(":core")
+// Feature modules — UI logic grouped by user-facing capability rather than layer.
+// :feature:characters  owns the character list screen, search, and pagination.
+// :feature:detail      owns the character detail screen, share, and favourite toggle.
+include(":feature:characters")
+include(":feature:detail")

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_back">Back</string>
+    <string name="label_share">Share</string>
+    <string name="content_desc_favourite">Add to favourites</string>
+    <string name="content_desc_unfavourite">Remove from favourites</string>
+    <string name="error_generic">Something went wrong, please try again later.</string>
+    <string name="error_image_unavailable">Image unavailable</string>
+    <string name="label_retry">Retry</string>
+</resources>

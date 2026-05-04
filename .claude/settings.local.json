@@ -45,7 +45,30 @@
       "Bash(./gradlew :app:compileDebugUnitTestKotlin)",
       "Bash(./gradlew :app:recordRoborazziDebug)",
       "Bash(./gradlew :app:verifyRoborazziDebug)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(./gradlew :data:testDebugUnitTest --tests \"com.bonial.data.integration.*\")",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(./gradlew :data:ktlintTestSourceSetCheck)",
+      "Bash(./gradlew :data:ktlintTestSourceSetFormat)",
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "Bash(./gradlew :data:ktlintCheck :domain:ktlintCheck :app:ktlintCheck)",
+      "Bash(./gradlew :data:ktlintMainSourceSetFormat :data:ktlintAndroidTestSourceSetFormat :app:ktlintTestSourceSetFormat)",
+      "Bash(./gradlew :app:ktlintMainSourceSetFormat)",
+      "Bash(./gradlew :data:compileDebugKotlin :app:compileDebugKotlin)",
+      "Bash(sed -i -e 's|import com.bonial.brochure.presentation.character\\\\.|import com.bonial.feature.characters.|g' -e 's|import com.bonial.brochure.presentation.model.CharacterUi|import com.bonial.feature.characters.CharacterUi|g' /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/app/src/test/java/com/bonial/brochure/presentation/home/CharactersScreenShotTest.kt /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/app/src/test/java/com/bonial/brochure/presentation/home/CharactersViewModelTest.kt)",
+      "Bash(sed -i -e 's|import com.bonial.brochure.presentation.character\\\\.ErrorMessage|import com.bonial.feature.characters.ErrorMessage|g' -e 's|import com.bonial.brochure.presentation.model.CharacterDetailUi|import com.bonial.feature.detail.CharacterDetailUi|g' /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/app/src/test/java/com/bonial/brochure/presentation/detail/CharacterDetailScreenShotTest.kt)",
+      "Bash(sed -i -e 's|import com.bonial.brochure.presentation.detail\\\\.CharacterDetail|import com.bonial.feature.detail.CharacterDetail|g' /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/app/src/test/java/com/bonial/brochure/presentation/home/CharacterDetailViewModelTest.kt)",
+      "Bash(./gradlew ktlintFormat)",
+      "Bash(git mv *)",
+      "Bash(./gradlew :core:compileDebugKotlin :domain:compileDebugKotlin :feature:characters:compileDebugKotlin :feature:detail:compileDebugKotlin :app:compileDebugKotlin)",
+      "Bash(./gradlew :feature:characters:compileDebugKotlin)",
+      "Bash(./gradlew :app:compileDebugUnitTestKotlin :feature:characters:compileDebugUnitTestKotlin :feature:detail:compileDebugUnitTestKotlin)",
+      "Bash(./gradlew :domain:testDebugUnitTest :data:testDebugUnitTest :network:testDebugUnitTest :core:testDebugUnitTest :app:testDebugUnitTest --continue)",
+      "Bash(./gradlew :data:compileDebugUnitTestKotlin)",
+      "Bash(./gradlew :domain:testDebugUnitTest :data:testDebugUnitTest :network:testDebugUnitTest :core:testDebugUnitTest :app:testDebugUnitTest --rerun-tasks)",
+      "Bash(git rm *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.home
+package com.bonial.feature.characters
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.Spring
@@ -75,11 +75,10 @@ import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
-import com.bonial.brochure.R
-import com.bonial.brochure.presentation.model.CharacterUi
-import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
-import com.bonial.brochure.presentation.theme.toStatusColorSet
 import com.bonial.core.ui.extensions.shimmerEffect
+import com.bonial.core.ui.theme.toStatusColorSet
+import com.bonial.feature.characters.CharacterUi
+import com.bonial.feature.characters.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -163,7 +162,7 @@ fun CharactersScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = GRID_SPACING.dp)
+                        .padding(horizontal = GRID_PADDING.dp)
                         .padding(
                             top = innerPadding.calculateTopPadding() + SEARCH_BAR_TOP_PADDING.dp,
                             bottom = SEARCH_BAR_BOTTOM_PADDING.dp,
@@ -269,15 +268,15 @@ fun CharactersLoadingGrid(bottomPadding: Dp = 0.dp) {
     val configuration = LocalConfiguration.current
     val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) GRID_COLUMNS_LANDSCAPE else GRID_COLUMNS_PORTRAIT
     LazyVerticalGrid(
+        modifier = Modifier.fillMaxSize(),
         columns = GridCells.Fixed(columns),
         contentPadding =
             PaddingValues(
-                start = GRID_SPACING.dp,
-                end = GRID_SPACING.dp,
-                top = GRID_SPACING.dp,
-                bottom = GRID_SPACING.dp + bottomPadding,
+                start = GRID_PADDING.dp,
+                end = GRID_PADDING.dp,
+                top = GRID_PADDING.dp,
+                bottom = GRID_PADDING.dp + bottomPadding,
             ),
-        modifier = Modifier.fillMaxSize(),
     ) {
         items(SHIMMER_ITEM_COUNT) { CharacterShimmerItem() }
     }
@@ -303,10 +302,10 @@ fun CharactersGrid(
         columns = GridCells.Fixed(columns),
         contentPadding =
             PaddingValues(
-                start = GRID_SPACING.dp,
-                end = GRID_SPACING.dp,
-                top = GRID_SPACING.dp,
-                bottom = GRID_SPACING.dp + bottomPadding,
+                start = GRID_PADDING.dp,
+                end = GRID_PADDING.dp,
+                top = GRID_PADDING.dp,
+                bottom = GRID_PADDING.dp + bottomPadding,
             ),
         modifier =
             modifier
@@ -333,7 +332,7 @@ fun CharactersGrid(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = GRID_SPACING.dp)
+                            .padding(vertical = GRID_PADDING.dp)
                             .testTag("next_page_loading"),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -349,7 +348,7 @@ fun CharactersGrid(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = GRID_SPACING.dp)
+                            .padding(vertical = GRID_PADDING.dp)
                             .testTag("pagination_error_retry"),
                 ) {
                     Text(
@@ -365,9 +364,9 @@ fun CharactersGrid(
 
 @Composable
 fun ErrorMessage(
+    modifier: Modifier = Modifier,
     message: String?,
     onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.padding(ERROR_MESSAGE_PADDING.dp),
@@ -389,13 +388,13 @@ fun ErrorMessage(
 
 @Composable
 fun CharacterItem(
+    modifier: Modifier = Modifier,
     name: String?,
     status: String?,
     imageUrl: String?,
     isFavourite: Boolean = false,
     onClick: () -> Unit = {},
     onFavouriteClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
@@ -529,7 +528,7 @@ fun CharacterImage(
             ImageRequest
                 .Builder(LocalContext.current)
                 .data(imageUrl)
-                .placeholder(R.drawable.placeholder_image)
+                .placeholder(com.bonial.core.R.drawable.placeholder_image)
                 .crossfade(true)
                 .build(),
         contentDescription =
@@ -555,7 +554,7 @@ fun ImageErrorPlaceholder(modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             AsyncImage(
-                model = R.drawable.placeholder_error,
+                model = com.bonial.core.R.drawable.placeholder_error,
                 contentDescription = null,
                 modifier = Modifier.size(IMAGE_ERROR_ICON_SIZE.dp),
                 contentScale = ContentScale.Fit,
@@ -624,7 +623,7 @@ fun CharacterShimmerItem(modifier: Modifier = Modifier) {
 
 private const val PAGING_THRESHOLD = 4
 private const val SHIMMER_ITEM_COUNT = 10
-private const val GRID_SPACING = 16
+private const val GRID_PADDING = 16
 private const val SEARCH_BAR_TOP_PADDING = 8
 private const val SEARCH_BAR_BOTTOM_PADDING = 8
 private const val EMPTY_STATE_PADDING = 32
@@ -656,7 +655,7 @@ private const val GRID_COLUMNS_PORTRAIT = 2
 @Preview(name = "CharacterItem – default", showBackground = true)
 @Composable
 fun PreviewCharacterItemDefault() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterItem(
             name = "Rick Sanchez",
             status = "Alive",
@@ -669,7 +668,7 @@ fun PreviewCharacterItemDefault() {
 @Preview(name = "CharacterItem – favourite", showBackground = true)
 @Composable
 fun PreviewCharacterItemFavourite() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharacterItem(
             name = "Morty Smith",
             status = "Dead",
@@ -682,7 +681,7 @@ fun PreviewCharacterItemFavourite() {
 @Preview(name = "EmptyState", showBackground = true)
 @Composable
 fun PreviewEmptyState() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         EmptyState()
     }
 }
@@ -690,7 +689,7 @@ fun PreviewEmptyState() {
 @Preview(name = "EmptySearchState", showBackground = true)
 @Composable
 fun PreviewEmptySearchState() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         EmptySearchState(query = "Pickle Rick")
     }
 }
@@ -698,7 +697,7 @@ fun PreviewEmptySearchState() {
 @Preview(name = "ErrorMessage – with retry", showBackground = true)
 @Composable
 fun PreviewErrorMessage() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         ErrorMessage(
             message = "The server is having trouble right now. Please try again later.",
             onRetry = {},
@@ -709,7 +708,7 @@ fun PreviewErrorMessage() {
 @Preview(name = "CharactersLoadingGrid", showBackground = true)
 @Composable
 fun PreviewCharactersLoadingGrid() {
-    CloseLoopWalletTheme(dynamicColor = false) {
+    MaterialTheme {
         CharactersLoadingGrid()
     }
 }

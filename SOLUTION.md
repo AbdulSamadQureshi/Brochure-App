@@ -17,13 +17,17 @@ A production-quality Android app covering all challenge requirements plus severa
 **Beyond scope:**
 - Favourites with Room persistence and real-time cross-screen sync
 - Share character card via Android share sheet
-- Full CI/CD pipeline (GitHub Actions)
+- Full CI/CD pipeline (GitHub Actions) with parallelised per-module unit-test jobs
 - Screenshot regression tests (Roborazzi)
 - JaCoCo code coverage (80.1% lines)
 - Static analysis (Detekt, zero-tolerance)
 - Code style enforcement (ktlint)
 - Gradle configuration cache
-- Signed APK published to GitHub Releases on every `develop → main` merge
+- Signed APK published to GitHub Releases on every merge into `main`
+- Offline-first character list with Room caching and 30-minute TTL
+- Paging 3 `RemoteMediator` + `PagingSource` infrastructure ready for ViewModel migration
+- Feature module scaffolding (`:feature:characters`, `:feature:favorites`)
+- Room DAO instrumented tests (`FavouritesDaoTest`, `CharactersDaoTest`)
 
 ### Note on Data Source
 
@@ -239,13 +243,40 @@ private fun loadCharacter(id: Int) {
 
 ### Room database design
 
-Two tables, deliberately separated:
-- `brochures` — character list cache (replaced on conflict)
-- `favourite_brochures` — single-column (`coverUrl` as PK) to keep the schema minimal
+Three tables across two Room migrations:
+
+| Table | Purpose |
+|---|---|
+| `brochures` | Legacy brochure list cache (replaced on conflict) |
+| `favourite_brochures` | Single-column (`coverUrl` as PK) for persisted favourites |
+| `characters` | Offline character list cache introduced in v3 (see below) |
+
+`MIGRATION_1_2` and `MIGRATION_2_3` demonstrate production-grade migration discipline — dropping and recreating the DB on schema change is not acceptable in production even on a coding challenge.
 
 Favourites use the image URL as the primary key rather than the character ID because the favourite state needs to survive API schema changes and works across any character source without coupling to the Rick & Morty API's ID scheme.
 
-A `MIGRATION_1_2` is included to demonstrate production-grade migration discipline — even on a coding challenge, dropping and recreating the DB on schema change is not acceptable in production.
+### Offline-first character caching (TTL strategy)
+
+`CharactersRepositoryImpl` was rewritten to be offline-first:
+
+1. Emit `Request.Loading`
+2. Check Room for a cached page via `CharactersDao.getCachedAt(page)`
+3. If the cache is **fresh** (within `CachePolicy.CHARACTER_TTL_MS` = 30 minutes): serve from Room, no network call
+4. If **stale or absent**: fetch from network, persist to Room (via `CharacterEntity`), emit the fresh data
+5. Network errors (`IOException`, `HttpException`) bubble up as `Request.Error`; the caller still has the previously-cached content on screen
+
+Search queries always bypass the cache (filtered result sets must not pollute the unfiltered page cache). The detail endpoint is always fetched live.
+
+`CachePolicy` is a single object holding all TTL constants, giving one auditable place to adjust cache lifetimes across the whole app.
+
+### Paging 3 infrastructure
+
+`CharactersRemoteMediator` (in `:data/paging`) implements the Paging 3 `RemoteMediator` contract. It:
+- Short-circuits `initialize()` with `SKIP_INITIAL_REFRESH` when the first-page cache is fresh
+- Deletes all cached characters on `LoadType.REFRESH` before writing new data
+- Returns `endOfPaginationReached = true` when the loaded page equals `totalPages`
+
+`CharactersDao.pagingSource()` exposes a Room-backed `PagingSource<Int, CharacterEntity>` that Paging 3 uses to drive the lazy list. Wiring this into the ViewModel and Compose screen (replacing the manual page-counter logic with `collectAsLazyPagingItems()`) is the next migration step.
 
 ### Navigation 3
 
@@ -263,7 +294,9 @@ Jetpack Navigation 3 uses `rememberNavBackStack()` with `NavDisplay` and lambda-
 
 **Use cases** (`GetEnrichedCharactersUseCaseTest`, `MapSuccessTest`): 9 + 3 tests. The enrichment test verifies that a character is marked `isFavourite=true` only when its image URL appears in the favourites set, and that the marking survives blank-name sanitisation.
 
-**Repository — unit** (`CharactersRepositoryImplTest`, `FavouritesRepositoryImplTest`): Verifies that DTO-to-domain mapping is correct and that DAO operations are called with the right arguments. The API service is mocked, so these tests focus purely on mapping and flow logic.
+**Repository — unit** (`CharactersRepositoryImplTest`, `FavouritesRepositoryImplTest`): Verifies that DTO-to-domain mapping is correct and that DAO operations are called with the right arguments. The API service and `CharactersDao` are mocked, so these tests focus purely on mapping, cache-hit/miss branching, and flow logic.
+
+**Room DAO instrumented** (`FavouritesDaoTest`, `CharactersDaoTest`): Run on a real Android JVM against an in-memory Room database. `FavouritesDaoTest` (6 tests) covers insert, `isFavouriteFlow` true/false, delete, duplicate conflict strategy, `getAllCoverUrls`. `CharactersDaoTest` (9 tests) covers `getByPage`, `getCachedAt`, `getTotalPages`, REPLACE conflict on re-insert, `deleteAll`, `deleteByPage`. Pure JVM unit tests cannot cover these because Room's annotation processor generates Android-specific bytecode.
 
 **API integration** (`CharactersApiServiceIntegrationTest`, `CharactersRepositoryIntegrationTest`, `NetworkHelperIntegrationTest`): A real Retrofit + Gson stack is wired against `MockWebServer` — no mocks, no emulator, pure JVM. These tests catch what the unit tests structurally cannot:
 - Wrong `@SerializedName` keys or missing `@Query`/`@Path` annotations
@@ -278,7 +311,7 @@ Jetpack Navigation 3 uses `rememberNavBackStack()` with `NavDisplay` and lambda-
 ### What is NOT tested and why
 
 - **Compose UI** (beyond screenshots): Testing individual Compose components with `ComposeTestRule` would require either an emulator or Robolectric with a full Compose renderer. Screenshot tests cover visual correctness; business logic is fully covered at the ViewModel and use-case layers.
-- **Room DAOs**: DAO testing requires an in-memory Room database which needs a real Android context. Given the repository layer is mocked in ViewModel tests and the DAO operations are simple CRUD, this was deprioritised in favour of broader coverage at the use-case layer.
+- **`CharactersRemoteMediator`**: Testing a `RemoteMediator` end-to-end requires a real `PagingState` and a real Room `PagingSource`. The core behaviour (network call → Room insert → `MediatorResult.Success/Error`) is verified indirectly through the integration tests for `CharactersRepositoryImpl`. A dedicated mediator test would be added alongside the ViewModel-side Paging 3 migration.
 
 ### Coverage
 
@@ -292,8 +325,8 @@ Excludes generated/framework code: Hilt DI modules, Room-generated DAOs, Compose
 
 | Area | Decision | Trade-off |
 |---|---|---|
-| **Pagination library** | Manual scroll-threshold pagination | Avoided Paging 3's complexity for a list that loads a single API with simple append semantics. Paging 3 would add value for filtered/sorted sources or very large datasets. |
-| **Offline character list** | In-memory StateFlow cache only | Characters are not persisted across process death. Favourites are always persisted. Adding full list persistence would require cache invalidation logic and a TTL strategy. |
+| **Pagination library** | Manual scroll-threshold + Paging 3 infrastructure ready | `CharactersRemoteMediator` and `CharactersDao.pagingSource()` are implemented. The ViewModel and Screen still use manual pagination; migrating them to `collectAsLazyPagingItems()` is the next step. |
+| **Offline character list** | Room cache with 30-min TTL | Characters survive process death and are served instantly from Room on relaunch within the TTL window. Cache is per-page, invalidated by search queries, and refreshed transparently by `CharactersRepositoryImpl`. |
 | **Token auth** | Bearer token interceptor wired, not activated | The current app doesn't require auth. The token infrastructure is in place (`UserPreferencesDataStore`, `RetrofitClient` interceptor) for when it does. |
 | **Error recovery** | Single retry button | There is no exponential backoff for user-initiated retries. `withRetry` handles automated 429 retries; user-facing retry fires a single fresh request. |
 | **Screenshot tests** | Single theme colour baseline | Roborazzi is wired up and the CI gate is in place. Additional baselines for full screens would be added as the UI stabilises. |
@@ -349,15 +382,14 @@ The current layer modules become the shared infrastructure. Each squad owns one 
 
 ### CI/CD at scale
 
-Current jobs run sequentially. As team size grows:
-- Split `unit-tests` into per-module jobs and run them in parallel (`test-domain`, `test-data`, `test-app`)
+Unit tests are already split into four parallel jobs (`test-domain`, `test-data`, `test-app`, `test-network`), all gated on `code-quality` and all feeding into `coverage`. Future steps:
 - Cache Gradle remote build cache across runners (configuration cache is already enabled)
-- Add an emulator farm job for instrumented Room DAO tests once data layer ownership grows
+- Add an emulator runner job for the new Room DAO instrumented tests (`FavouritesDaoTest`, `CharactersDaoTest`)
 - Promote screenshot baselines to a separate approved-design-only branch
 
 ### Code quality enforcement
 
-- `detekt` with `maxIssues: 0` prevents technical debt accumulation regardless of team size or deadline pressure
+- `detekt` with `maxIssues: 0` prevents technical debt accumulation regardless of team size or deadline pressure; active rules include `TooGenericExceptionCaught` (banning `catch (e: Exception/Throwable)`) — the offline-first repository catches `IOException` and `HttpException` explicitly rather than a broad handler
 - `ktlint` standardises formatting so code review focuses on logic
 - JaCoCo coverage gate can be tightened per module independently as teams mature
 
@@ -380,16 +412,14 @@ feature/*  ──PR──▶  develop  ──PR──▶  main
 
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
-| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `develop` → `main` PR opened/updated | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Hotfix PR opened/updated → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Any PR opened/updated (any source → any target) | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-`develop → main` skips checks because every commit was already verified on its feature PR. Hotfix PRs targeting `main` directly run all checks since they bypass the normal develop flow. Releases always build from `main` regardless of the source branch.
+All check jobs run on every PR regardless of source or target branch — the workflow trigger has no `branches:` filter. This means PRs between any two branches (e.g. `refinement → temp`, `feature/x → develop`, `develop → main`) all receive the same quality gates. The build & release job is separately gated by its own `if:` condition to merged-into-main events only.
 
-### Why build only on `develop → main` merge?
+### Why build only on merge into `main`?
 
-Building on every push to `develop` would produce an APK for every work-in-progress commit. By gating the build behind a deliberate `develop → main` PR, every release is intentional and stakeholders only see completed, reviewed work.
+Building on every PR push would produce an APK for every work-in-progress commit. By gating the build behind a deliberate merge into `main`, every release is intentional and stakeholders only see completed, reviewed work.
 
 ### Signed APK in CI
 
@@ -440,14 +470,20 @@ CodingChallenge/
 │
 ├── :data                                 # Data access
 │   ├── repository/
-│   │   ├── CharactersRepositoryImpl      # API fetch → domain model
+│   │   ├── CharactersRepositoryImpl      # Offline-first: Room cache (TTL) → network fallback
 │   │   └── FavouritesRepositoryImpl      # Room CRUD + Flow<Set<String>>
 │   ├── local/
-│   │   ├── BrochuresDatabase.kt          # Room v2, MIGRATION_1_2
-│   │   ├── BrochuresDao / FavouritesDao
-│   │   └── BrochureEntity / FavouriteBrochureEntity
-│   ├── mapper/CharacterMappers.kt        # DTO → domain, null-safe
+│   │   ├── BrochuresDatabase.kt          # Room v3, MIGRATION_1_2, MIGRATION_2_3
+│   │   ├── BrochuresDao / FavouritesDao / CharactersDao
+│   │   ├── BrochureEntity / FavouriteBrochureEntity / CharacterEntity
+│   │   └── CachePolicy.kt               # TTL constants (30-min character cache)
+│   ├── paging/
+│   │   └── CharactersRemoteMediator.kt   # Paging 3 RemoteMediator (network → Room)
+│   ├── mapper/CharacterMappers.kt        # DTO → domain + DTO/Entity ↔ domain
 │   └── utils/NetworkHelper.kt            # safeApiCall, withRetry, manageThrowable
+│
+├── :feature:characters                   # Scaffolded — screens will migrate here from :app
+├── :feature:favorites                    # Scaffolded — screens will migrate here from :app
 │
 ├── :network                              # HTTP layer
 │   └── RetrofitClient.kt                 # OkHttp client, logging, bearer token interceptor

@@ -6,6 +6,7 @@ import com.bonial.data.local.BrochureLocalDataSource
 import com.bonial.data.local.BrochureLocalDataSourceImpl
 import com.bonial.data.local.BrochuresDao
 import com.bonial.data.local.BrochuresDatabase
+import com.bonial.data.local.CharactersDao
 import com.bonial.data.local.FavouritesDao
 import com.bonial.data.remote.service.CharactersApiService
 import dagger.Binds
@@ -30,8 +31,10 @@ object DataModule {
                 context,
                 BrochuresDatabase::class.java,
                 "brochures.db",
-            ).addMigrations(BrochuresDatabase.MIGRATION_1_2)
-            .build()
+            ).addMigrations(
+                BrochuresDatabase.MIGRATION_1_2,
+                BrochuresDatabase.MIGRATION_2_3,
+            ).build()
 
     @Provides
     @Singleton
@@ -40,6 +43,10 @@ object DataModule {
     @Provides
     @Singleton
     fun provideFavouritesDao(database: BrochuresDatabase): FavouritesDao = database.favouritesDao()
+
+    @Provides
+    @Singleton
+    fun provideCharactersDao(database: BrochuresDatabase): CharactersDao = database.charactersDao()
 
     @Provides
     @Singleton

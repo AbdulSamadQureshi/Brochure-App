@@ -1,13 +1,12 @@
-package com.bonial.brochure.presentation.theme
+package com.bonial.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
 /**
  * All status-related colours in one place.
  *
- * Open/Closed: to support a new status value, add one entry here.
- * Neither [StatusBadge] (list screen) nor [StatusChip] (detail screen) needs
- * to change — they both delegate to this mapper.
+ * Shared by :feature:characters (list badge) and :feature:detail (detail chip)
+ * so status colour definitions never drift apart between screens.
  */
 data class StatusColorSet(
     /** Dot / solid indicator colour. */

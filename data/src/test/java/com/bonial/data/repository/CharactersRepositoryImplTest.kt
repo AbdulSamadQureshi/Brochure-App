@@ -1,6 +1,7 @@
 package com.bonial.data.repository
 
 import app.cash.turbine.test
+import com.bonial.data.local.CharactersDao
 import com.bonial.data.remote.model.CharacterDto
 import com.bonial.data.remote.model.CharacterResponseDto
 import com.bonial.data.remote.model.PageInfoDto
@@ -28,11 +29,12 @@ import java.io.IOException
  */
 class CharactersRepositoryImplTest {
     private val apiService: CharactersApiService = mock()
+    private val charactersDao: CharactersDao = mock()
     private lateinit var repository: CharactersRepositoryImpl
 
     @Before
     fun setUp() {
-        repository = CharactersRepositoryImpl(apiService)
+        repository = CharactersRepositoryImpl(apiService, charactersDao)
     }
 
     @Test

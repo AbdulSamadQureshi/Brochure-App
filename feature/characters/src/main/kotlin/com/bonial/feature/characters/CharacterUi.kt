@@ -1,4 +1,4 @@
-package com.bonial.brochure.presentation.model
+package com.bonial.feature.characters
 
 data class CharacterUi(
     val id: Int,

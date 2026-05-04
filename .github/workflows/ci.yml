@@ -2,7 +2,8 @@ name: CI
 
 on:
   pull_request:
-    branches: [ develop, main ]
+    # No branch filter — checks run on every PR regardless of target branch.
+    # The build job is separately gated to merged-into-main only.
     types: [ opened, synchronize, reopened, closed ]
 
 concurrency:
@@ -13,20 +14,16 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Check jobs (code-quality, unit-tests, coverage, screenshot-tests)
   #
-  # Run on:  feature → develop PRs  (standard development flow)
-  #          hotfix  → main PRs     (emergency fixes that skip develop)
-  # Skip on: the "closed" event (no point checking after a merge)
-  #          develop → main PRs     (code was already verified on every feature
-  #                                  PR that landed it in develop)
+  # Run on:  every open/synchronize/reopened PR — any source → any target branch.
+  # Skip on: the "closed" event (no point checking after a merge or close).
+  #
+  # The release build job at the bottom is kept separate and only fires when
+  # a PR is merged into main.
   # ─────────────────────────────────────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,15 +52,17 @@ jobs:
           path: '**/build/reports/detekt/**'
           retention-days: 7
 
-  unit-tests:
-    name: Unit Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Unit-test jobs run in parallel per module, all gated on code-quality.
+  # Splitting them this way means a failing :data test doesn't block :app tests
+  # from starting, and the total wall-clock time is the slowest module rather
+  # than the sum of all modules.
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-domain:
+    name: Unit Tests · :domain
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,26 +77,129 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run :domain unit tests
+        run: ./gradlew :domain:testDebugUnitTest
 
-      - name: Upload test reports
+      - name: Upload :domain test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-reports
-          path: '**/build/reports/tests/**'
+          name: test-reports-domain
+          path: 'domain/build/reports/tests/**'
           retention-days: 7
+
+  test-data:
+    name: Unit Tests · :data
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.event.action != 'closed'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run :data unit tests
+        run: ./gradlew :data:testDebugUnitTest
+
+      - name: Upload :data test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-data
+          path: 'data/build/reports/tests/**'
+          retention-days: 7
+
+  test-app:
+    name: Unit Tests · :app + :core
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.event.action != 'closed'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run :app and :core unit tests
+        run: ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+
+      - name: Upload :app/:core test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-app
+          path: |
+            app/build/reports/tests/**
+            core/build/reports/tests/**
+          retention-days: 7
+
+  test-network:
+    name: Unit Tests · :network
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.event.action != 'closed'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run :network unit tests
+        run: ./gradlew :network:testDebugUnitTest
+
+      - name: Upload :network test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-network
+          path: 'network/build/reports/tests/**'
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rollup job whose name matches the "Unit Tests" branch-protection required
+  # status check.  The four parallel jobs above have suffixed names
+  # ("Unit Tests · :domain", etc.) which GitHub treats as different checks.
+  # This no-op job fans back in so branch protection gets a single green tick.
+  # ─────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [test-domain, test-data, test-app, test-network]
+    if: github.event.action != 'closed'
+    steps:
+      - run: echo "All unit-test jobs passed."
 
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
-    needs: unit-tests
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    # Wait for all four parallel test jobs — coverage aggregates every module.
+    needs: [test-domain, test-data, test-app, test-network]
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,11 +235,7 @@ jobs:
     name: Screenshot Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

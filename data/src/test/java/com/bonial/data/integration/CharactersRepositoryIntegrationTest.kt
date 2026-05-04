@@ -1,6 +1,7 @@
 package com.bonial.data.integration
 
 import app.cash.turbine.test
+import com.bonial.data.local.CharactersDao
 import com.bonial.data.remote.service.CharactersApiService
 import com.bonial.data.repository.CharactersRepositoryImpl
 import com.bonial.domain.model.network.response.Request
@@ -11,6 +12,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.mock
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -28,6 +30,7 @@ import retrofit2.converter.gson.GsonConverterFactory
  */
 class CharactersRepositoryIntegrationTest {
     private val mockWebServer = MockWebServer()
+    private val charactersDao: CharactersDao = mock()
     private lateinit var repository: CharactersRepositoryImpl
 
     @Before
@@ -40,7 +43,7 @@ class CharactersRepositoryIntegrationTest {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(CharactersApiService::class.java)
-        repository = CharactersRepositoryImpl(apiService)
+        repository = CharactersRepositoryImpl(apiService, charactersDao)
     }
 
     @After
