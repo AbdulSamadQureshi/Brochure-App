@@ -382,7 +382,7 @@ The current layer modules become the shared infrastructure. Each squad owns one 
 
 ### CI/CD at scale
 
-Unit tests are already split into three parallel jobs (`test-domain`, `test-data`, `test-app`), all gated on `code-quality` and all feeding into `coverage`. Future steps:
+Unit tests are already split into four parallel jobs (`test-domain`, `test-data`, `test-app`, `test-network`), all gated on `code-quality` and all feeding into `coverage`. Future steps:
 - Cache Gradle remote build cache across runners (configuration cache is already enabled)
 - Add an emulator runner job for the new Room DAO instrumented tests (`FavouritesDaoTest`, `CharactersDaoTest`)
 - Promote screenshot baselines to a separate approved-design-only branch
@@ -412,16 +412,14 @@ feature/*  ──PR──▶  develop  ──PR──▶  main
 
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
-| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `develop` → `main` PR opened/updated | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Hotfix PR opened/updated → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Any PR opened/updated (any source → any target) | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-`develop → main` skips checks because every commit was already verified on its feature PR. Hotfix PRs targeting `main` directly run all checks since they bypass the normal develop flow. Releases always build from `main` regardless of the source branch.
+All check jobs run on every PR regardless of source or target branch — the workflow trigger has no `branches:` filter. This means PRs between any two branches (e.g. `refinement → temp`, `feature/x → develop`, `develop → main`) all receive the same quality gates. The build & release job is separately gated by its own `if:` condition to merged-into-main events only.
 
-### Why build only on `develop → main` merge?
+### Why build only on merge into `main`?
 
-Building on every push to `develop` would produce an APK for every work-in-progress commit. By gating the build behind a deliberate `develop → main` PR, every release is intentional and stakeholders only see completed, reviewed work.
+Building on every PR push would produce an APK for every work-in-progress commit. By gating the build behind a deliberate merge into `main`, every release is intentional and stakeholders only see completed, reviewed work.
 
 ### Signed APK in CI
 

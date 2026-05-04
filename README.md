@@ -313,7 +313,7 @@ Feature modules depend on `:domain` and `:core` but not on each other — the sa
 
 ### CI/CD scaling
 
-Unit tests already run in three parallel jobs (`test-domain`, `test-data`, `test-app`), all gated on `code-quality` and all feeding `coverage`. Future steps:
+Unit tests already run in four parallel jobs (`test-domain`, `test-data`, `test-app`, `test-network`), all gated on `code-quality` and all feeding `coverage`. Future steps:
 - Cache Gradle remote build cache across runners (configuration cache is already enabled)
 - Add an emulator runner job for `FavouritesDaoTest` and `CharactersDaoTest` (currently require an Android device/emulator)
 - Promote screenshot baselines to a dedicated branch updated only on approved design changes
@@ -389,8 +389,8 @@ git checkout develop           # always work from develop
 ```
 1.  git checkout -b feature/your-feature   # branch from develop
 2.  Make changes and commit
-3.  Open PR targeting develop
-4.  CI must pass (Code Quality + Unit Tests + Coverage + Screenshots)
+3.  Open PR (targeting develop or any other branch)
+4.  CI must pass (Code Quality + Unit Tests + Coverage + Screenshots) — checks run on every PR regardless of target branch
 5.  Merge once green — no approval required (solo project)
 ```
 Releases are cut by merging any PR into `main` (`develop → main` for normal releases, `hotfix/* → main` for emergency fixes). The build always runs from `main` and automatically publishes a GitHub Release.
@@ -455,12 +455,10 @@ Feature branches are **automatically deleted** after their PR is merged. `develo
 
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
-| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `develop` → `main` PR opened/updated | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Hotfix PR opened/updated → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Any PR opened/updated (any source → any target) | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-> `develop → main` skips all checks — every commit in it was already verified on its feature PR. Hotfix PRs targeting `main` directly run all checks since they bypass the normal `develop` flow.
+> All check jobs run on every PR regardless of source or target branch — this ensures that PRs between any two branches (e.g. `refinement → temp`, `feature/x → develop`, `develop → main`) receive the same quality gates. The build & release job is separately gated to merged-into-main only.
 
 ### CI Jobs
 

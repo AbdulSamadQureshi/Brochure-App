@@ -2,7 +2,8 @@ name: CI
 
 on:
   pull_request:
-    branches: [ develop, main ]
+    # No branch filter — checks run on every PR regardless of target branch.
+    # The build job is separately gated to merged-into-main only.
     types: [ opened, synchronize, reopened, closed ]
 
 concurrency:
@@ -13,20 +14,16 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Check jobs (code-quality, unit-tests, coverage, screenshot-tests)
   #
-  # Run on:  feature → develop PRs  (standard development flow)
-  #          hotfix  → main PRs     (emergency fixes that skip develop)
-  # Skip on: the "closed" event (no point checking after a merge)
-  #          develop → main PRs     (code was already verified on every feature
-  #                                  PR that landed it in develop)
+  # Run on:  every open/synchronize/reopened PR — any source → any target branch.
+  # Skip on: the "closed" event (no point checking after a merge or close).
+  #
+  # The release build job at the bottom is kept separate and only fires when
+  # a PR is merged into main.
   # ─────────────────────────────────────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -65,11 +62,7 @@ jobs:
     name: Unit Tests · :domain
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,11 +92,7 @@ jobs:
     name: Unit Tests · :data
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,11 +122,7 @@ jobs:
     name: Unit Tests · :app + :core
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -169,11 +154,7 @@ jobs:
     name: Unit Tests · :network
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -204,11 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     # Wait for all four parallel test jobs — coverage aggregates every module.
     needs: [test-domain, test-data, test-app, test-network]
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -244,11 +221,7 @@ jobs:
     name: Screenshot Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: >
-      github.event.action != 'closed' &&
-      (github.event.pull_request.base.ref == 'develop' ||
-       (github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref != 'develop'))
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
