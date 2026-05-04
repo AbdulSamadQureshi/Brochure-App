@@ -495,4 +495,4 @@ Each variant reads its API base URL and config from a corresponding `.properties
 | **Detekt** | `config/detekt/detekt.yml` | `maxIssues: 0` — zero tolerance; CI fails on any violation |
 | **ktlint** | Gradle plugin `14.2.0` | `ignoreFailures: false`; CI fails on style violations |
 
-Key Detekt rules: max line length 140, cyclomatic complexity ≤ 25, long method ≤ 60 lines, no FIXME/STOPSHIP comments, coroutine best-practices enforced, `@Composable` functions exempt from complexity rules.
+Key Detekt rules: max line length 140, cyclomatic complexity ≤ 25, long method ≤ 60 lines, no FIXME/STOPSHIP comments, coroutine best-practices enforced, `@Composable` functions exempt from complexity rules, `TooGenericExceptionCaught` active (bans `catch (e: Exception/Throwable)` — all catch sites must name the specific exception type, e.g. `IOException` or `HttpException`).

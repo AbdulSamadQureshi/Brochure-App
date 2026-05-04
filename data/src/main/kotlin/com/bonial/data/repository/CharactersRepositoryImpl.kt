@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -99,7 +101,9 @@ class CharactersRepositoryImpl
                             ),
                         ),
                     )
-                } catch (e: Exception) {
+                } catch (e: IOException) {
+                    emit(Request.Error(apiError = manageThrowable(e)))
+                } catch (e: HttpException) {
                     emit(Request.Error(apiError = manageThrowable(e)))
                 }
             }.flowOn(Dispatchers.IO)

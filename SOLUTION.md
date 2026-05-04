@@ -263,7 +263,7 @@ Favourites use the image URL as the primary key rather than the character ID bec
 2. Check Room for a cached page via `CharactersDao.getCachedAt(page)`
 3. If the cache is **fresh** (within `CachePolicy.CHARACTER_TTL_MS` = 30 minutes): serve from Room, no network call
 4. If **stale or absent**: fetch from network, persist to Room (via `CharacterEntity`), emit the fresh data
-5. Network errors bubble up as `Request.Error`; the caller still has the previously-cached content on screen
+5. Network errors (`IOException`, `HttpException`) bubble up as `Request.Error`; the caller still has the previously-cached content on screen
 
 Search queries always bypass the cache (filtered result sets must not pollute the unfiltered page cache). The detail endpoint is always fetched live.
 
@@ -389,7 +389,7 @@ Unit tests are already split into three parallel jobs (`test-domain`, `test-data
 
 ### Code quality enforcement
 
-- `detekt` with `maxIssues: 0` prevents technical debt accumulation regardless of team size or deadline pressure
+- `detekt` with `maxIssues: 0` prevents technical debt accumulation regardless of team size or deadline pressure; active rules include `TooGenericExceptionCaught` (banning `catch (e: Exception/Throwable)`) — the offline-first repository catches `IOException` and `HttpException` explicitly rather than a broad handler
 - `ktlint` standardises formatting so code review focuses on logic
 - JaCoCo coverage gate can be tightened per module independently as teams mature
 
