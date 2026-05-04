@@ -180,6 +180,20 @@ jobs:
           path: 'network/build/reports/tests/**'
           retention-days: 7
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rollup job whose name matches the "Unit Tests" branch-protection required
+  # status check.  The four parallel jobs above have suffixed names
+  # ("Unit Tests · :domain", etc.) which GitHub treats as different checks.
+  # This no-op job fans back in so branch protection gets a single green tick.
+  # ─────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [test-domain, test-data, test-app, test-network]
+    if: github.event.action != 'closed'
+    steps:
+      - run: echo "All unit-test jobs passed."
+
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
